@@ -51,12 +51,12 @@ const getInitials = (name: string | undefined): string => {
 <template>
   <div class="container mx-auto flex flex-col gap-6 py-6 md:gap-8 md:py-10">
     <!-- {/* Saludo */} -->
-    <h1 class="text-2xl font-semibold md:text-3xl">
+    <h1 class="text-2xl font-bold md:text-3xl">
       ¡Bienvenido de nuevo, {{ authStore.user?.name || "Usuario" }}!
     </h1>
 
     <!-- {/* --- INICIO: Tarjeta de Perfil de Usuario (Tamaño Ajustado) --- */} -->
-    <Card class="w-full mb-8">
+    <Card class="w-full mb-4">
       <CardContent class="flex items-center justify-between p-4">
         <!-- {/* Info Izquierda: Avatar + Texto */} -->
         <div class="flex items-center gap-4">
@@ -139,6 +139,7 @@ const getInitials = (name: string | undefined): string => {
         <CardHeader></CardHeader>
         <CardContent class="pl-2">
           <div class="h-72 w-full">
+            <!-- @vue-expect-error -->
             <Line :data="lineChartData" :options="lineChartOptions" />
           </div>
         </CardContent>
@@ -149,6 +150,7 @@ const getInitials = (name: string | undefined): string => {
         <CardHeader></CardHeader>
         <CardContent>
           <div class="h-72 w-full">
+            <!-- @vue-expect-error -->
             <Bar :data="barChartData" :options="barChartOptions" />
           </div>
         </CardContent>
@@ -159,6 +161,7 @@ const getInitials = (name: string | undefined): string => {
         <CardHeader></CardHeader>
         <CardContent>
           <div class="relative mx-auto h-72 w-full max-w-xs">
+            <!-- @vue-expect-error -->
             <Doughnut :data="doughnutChartData" :options="doughnutChartOptions" />
           </div>
         </CardContent>

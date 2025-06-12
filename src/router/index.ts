@@ -37,7 +37,7 @@ const router = createRouter({
 				{
 					path: 'invoice-upload', // Nueva ruta
 					name: 'invoice-upload',
-					component: () => import('@/views/InvoiceUploadView.vue'), // Carga lazy
+					component: () => import('@/views/POInvoiceUploadView.vue'), // Carga lazy
 				},
 				{
 					path: 'http-logs', // Nueva ruta
