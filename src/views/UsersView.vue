@@ -239,8 +239,8 @@ watch([searchTerm, selectedRole, selectedStatus], () => {
       <h1 class="text-2xl font-bold md:text-3xl">Usuarios</h1>
       <div class="flex items-center gap-2">
         <Button :variant="showFilters ? 'secondary' : 'outline'" @click="showFilters = !showFilters" :class="activeFilterCount > 0
-            ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
-            : ''
+          ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
+          : ''
           ">
           <Filter class="mr-2 h-4 w-4" />
           Filtros
@@ -381,11 +381,10 @@ watch([searchTerm, selectedRole, selectedStatus], () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge :variant="user.status === 'Active' ? 'outline' : 'destructive'" class="capitalize"
-                          :class="{
-                            'border-green-500 text-green-600': user.status === 'Active',
-                            'border-red-500 text-red-600 bg-white': user.status === 'Inactive',
-                          }">
+                        <Badge class="capitalize" :class="{
+                          'border-green-500 text-green-600 bg-transparent font-bold': user.status === 'Active',
+                          'border-red-500 text-red-600 bg-transparent font-bold': user.status === 'Inactive',
+                        }">
                           {{ user.status }}
                         </Badge>
                       </TableCell>
@@ -489,7 +488,8 @@ watch([searchTerm, selectedRole, selectedStatus], () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" class="w-full" @click="clearFilters" :disabled="activeFilterCount === 0">
+              <Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+                :disabled="activeFilterCount === 0">
                 Limpiar filtros
               </Button>
             </CardFooter>

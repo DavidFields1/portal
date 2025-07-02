@@ -12,6 +12,7 @@ import {
   ChevronRight,
   PanelLeft,
   LogOut,
+  PackageCheck,
 } from 'lucide-vue-next'
 
 import {
@@ -40,7 +41,19 @@ const navMain = [
     title: "Gestión", icon: UsersIcon, items: [{ title: "Usuarios", url: "/users" },
     { title: "Log de Peticiones", url: "/http-logs" },],
   },
-  { title: "Facturación", icon: CreditCard, items: [{ title: "Carga de Factura con OC", url: "/invoice-upload" },], },
+  {
+    title: "Facturación", icon: CreditCard, items: [
+      { title: "Mis Facturas", url: "/invoices" },
+      { title: "Carga de Factura con OC", url: "/invoice-upload" },
+      { title: "Carga de Factura sin OC", url: "/invoice-upload-no-po" },
+    ],
+  },
+  {
+    title: "Complementos", icon: PackageCheck, items: [
+      { title: "Mis Complementos", url: "/complements" },
+      { title: "Complementos de Pago", url: "/complements-pay" },
+    ],
+  },
   { title: "Configuración", url: "/settings", icon: Settings2, },
 ]
 

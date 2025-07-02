@@ -35,9 +35,24 @@ const router = createRouter({
 					component: () => import('@/views/SettingsView.vue'), // <--- ACTUALIZADO
 				},
 				{
+					path: 'invoices', // Nueva ruta
+					name: 'invoices',
+					component: () => import('@/views/MyInvoices.vue'), // Carga lazy
+				},
+				{
 					path: 'invoice-upload', // Nueva ruta
 					name: 'invoice-upload',
 					component: () => import('@/views/POInvoiceUploadView.vue'), // Carga lazy
+				},
+				{
+					path: 'invoice-upload-no-po', // Nueva ruta
+					name: 'invoice-upload-no-po',
+					component: () => import('../views/NoPOInvoiceUploadView.vue'), // Lazy load, fixed path
+				},
+				{
+					path: 'complements', // Nueva ruta
+					name: 'complements',
+					component: () => import('@/views/MyComplements.vue'), // Lazy load, fixed path
 				},
 				{
 					path: 'http-logs', // Nueva ruta

@@ -265,7 +265,7 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
           </CardHeader>
           <CardContent class="space-y-2">
             <Button v-for="po in purchaseOrders" :key="po.id" variant="ghost"
-              class="w-full justify-start text-left h-auto flex-col items-start p-3" :class="{
+              class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm" :class="{
                 'bg-accent border-l-4 border-l-primary': selectedPOId === po.id,
                 'opacity-50 cursor-not-allowed': !isPOSelectable(po)
               }" :disabled="!isPOSelectable(po)" @click="selectPO(po.id)">

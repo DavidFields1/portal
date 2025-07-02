@@ -71,21 +71,32 @@ const httpLogs = ref<HttpLogEntry[]>([
   { id: "log_007", method: "GET", action: "Ver Perfil", endpoint: "/api/v1/users/me", module: "Usuarios", userId: "user-002", status: 200, timestamp: "2024-05-15T11:10:20Z", requestPayload: null, responsePayload: { id: "user-002" } },
   { id: "log_008", method: "GET", action: "Obtener Reporte", endpoint: "/api/v1/reports/sales", module: "Reportes", userId: "admin-001", status: 200, timestamp: "2024-05-16T09:00:00Z", requestPayload: null, responsePayload: { data: "..." } },
   { id: "log_009", method: "PATCH", action: "Actualizar Stock", endpoint: "/api/v1/products/prod_123", module: "Productos", userId: "admin-001", status: 200, timestamp: "2024-05-16T09:15:00Z", requestPayload: { stock: 99 }, responsePayload: { success: true } },
-  { id: "log_010", method: "GET", action: "Buscar Clientes", endpoint: "/api/v1/customers?q=test", module: "Clientes", userId: "user-002", status: 200, timestamp: "2024-05-16T10:00:00Z", requestPayload: null, responsePayload: { count: 5 } },
+  { id: "log_010", method: "GET", action: "Buscar Clientes", endpoint: "/api/v1/customers?q=test", module: "Clientes", userId: "user-002", status: 300, timestamp: "2024-05-16T10:00:00Z", requestPayload: null, responsePayload: { count: 5 } },
   { id: "log_011", method: "POST", action: "Crear Ticket", endpoint: "/api/v1/support/tickets", module: "Soporte", userId: "user-003", status: 201, timestamp: "2024-05-16T10:30:00Z", requestPayload: { subject: "Ayuda" }, responsePayload: { id: "tkt_001" } },
   { id: "log_012", method: "GET", action: "Obtener Facturas", endpoint: "/api/v1/invoices?status=paid", module: "Facturación", userId: "admin-001", status: 403, timestamp: "2024-05-17T14:00:00Z", requestPayload: null, responsePayload: { error: "Forbidden" } },
 ]);
 // --- Fin Datos Simulados ---
 
-// --- Estado para Filas Expandidas ---
-const expandedRows = ref<Set<string>>(new Set());
-const toggleRowExpansion = (logId: string) => { if (expandedRows.value.has(logId)) { expandedRows.value.delete(logId); } else { expandedRows.value.add(logId); } };
-const isRowExpanded = (logId: string) => { return expandedRows.value.has(logId); };
+// --- Estado para Filas Expandidas (LÓGICA ACTUALIZADA) ---
+const expandedRowId = ref<string | null>(null);
+
+const toggleRowExpansion = (logId: string) => {
+  expandedRowId.value = expandedRowId.value === logId ? null : logId;
+};
+
+const isRowExpanded = (logId: string) => {
+  return expandedRowId.value === logId;
+};
 // --- Fin Estado Expansión ---
 
 // --- Helpers ---
 const formatDate = (dateString: string) => { try { return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(dateString)); } catch { return dateString; } };
-const getStatusVariant = (status: number): "default" | "destructive" | "outline" | "secondary" => { if (status >= 200 && status < 300) return "outline"; if (status >= 400 && status < 500) return "destructive"; if (status >= 500) return "destructive"; if (status >= 300 && status < 400) return "secondary"; return "default"; };
+const getStatusVariant = (status: number) => {
+  if (status >= 200 && status < 300) return "text-green-500 border-green-500 bg-transparent font-bold";
+  if (status >= 400 && status < 500) return "text-red-500 border-red-500 bg-transparent font-bold";
+  if (status >= 300 && status < 400) return "text-yellow-500 border-yellow-500 bg-transparent font-bold";
+  return "text-grey-500 border-black bg-transparent font-bold";
+};
 const getMethodVariant = (method: HttpLogEntry["method"]): "default" | "secondary" | "outline" | "destructive" => { switch (method) { case 'GET': return 'default'; case 'POST': return 'secondary'; case 'PUT': case 'PATCH': return 'outline'; case 'DELETE': return 'destructive'; default: return 'default'; } }
 // --- Fin Helpers ---
 
@@ -183,7 +194,7 @@ const filteredLogs = computed(() => {
 
 // --- Lógica de Paginación ---
 const currentPage = ref(1);
-const itemsPerPage = ref(10);
+const itemsPerPage = ref(6);
 
 const totalPages = computed(() => {
   return Math.ceil(filteredLogs.value.length / itemsPerPage.value);
@@ -267,37 +278,32 @@ watch(filteredLogs, () => {
                         </TableCell>
                         <TableCell class="font-medium px-2 sm:px-4">{{
                           log.id
-                          }}</TableCell>
+                        }}</TableCell>
                         <TableCell class="px-2 sm:px-4">
                           <Badge :variant="getMethodVariant(log.method)">{{
                             log.method
-                            }}</Badge>
+                          }}</Badge>
                         </TableCell>
                         <TableCell class="px-2 sm:px-4">{{
                           log.action
-                          }}</TableCell>
+                        }}</TableCell>
                         <TableCell class="max-w-xs truncate px-2 sm:px-4">{{
                           log.endpoint
-                          }}</TableCell>
+                        }}</TableCell>
                         <TableCell class="px-2 sm:px-4">{{
                           log.module
-                          }}</TableCell>
+                        }}</TableCell>
                         <TableCell class="px-2 sm:px-4">{{
                           log.userId
-                          }}</TableCell>
+                        }}</TableCell>
                         <TableCell class="px-2 sm:px-4">
-                          <Badge :variant="getStatusVariant(log.status)" :class="{
-                            'border-green-500 text-green-600':
-                              log.status >= 200 && log.status < 300,
-                            'border-red-500 text-red-600 bg-white':
-                              log.status >= 400,
-                          }">
+                          <Badge :class="getStatusVariant(log.status)">
                             {{ log.status }}
                           </Badge>
                         </TableCell>
                         <TableCell class="text-right px-2 sm:px-4">{{
                           formatDate(log.timestamp)
-                          }}</TableCell>
+                        }}</TableCell>
                       </TableRow>
 
                       <!-- Fila Expandible (Condicional) -->
@@ -466,7 +472,8 @@ watch(filteredLogs, () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" class="w-full" @click="clearFilters" :disabled="activeFilterCount === 0">
+              <Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+                :disabled="activeFilterCount === 0">
                 Limpiar filtros
               </Button>
             </CardFooter>
