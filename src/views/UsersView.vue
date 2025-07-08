@@ -230,6 +230,11 @@ const formatDate = (dateString: string) => {
 watch([searchTerm, selectedRole, selectedStatus], () => {
   currentPage.value = 1;
 });
+
+const getFiltersButtonVariant = () => {
+  if (showFilters.value) return 'default'
+  else if (!showFilters.value && activeFilterCount.value == 0) return 'outline'
+}
 </script>
 
 <template>
@@ -238,7 +243,7 @@ watch([searchTerm, selectedRole, selectedStatus], () => {
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold md:text-3xl">Usuarios</h1>
       <div class="flex items-center gap-2">
-        <Button :variant="showFilters ? 'secondary' : 'outline'" @click="showFilters = !showFilters" :class="activeFilterCount > 0
+        <Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
           ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
           : ''
           ">
@@ -365,7 +370,7 @@ watch([searchTerm, selectedRole, selectedStatus], () => {
                     </TableRow>
                   </template>
                   <template v-else-if="paginatedUsers.length > 0">
-                    <TableRow v-for="user in paginatedUsers" :key="user.id" class="hover:bg-muted/50">
+                    <TableRow v-for="user in paginatedUsers" :key="user.id">
                       <TableCell>
                         <Avatar>
                           <!-- @vue-expect-error -->

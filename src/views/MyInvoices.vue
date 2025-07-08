@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Filter,
-  FileText,
   Calendar as CalendarIcon,
 } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
@@ -244,6 +240,18 @@ const formatCurrency = (amount: number, currency: string) =>
 watch([searchTerm, selectedEstatus, startDate, endDate, selectedFechaFiltro], () => {
   currentPage.value = 1;
 });
+
+const getFiltersButtonVariant = () => {
+  if (showFilters.value) return 'default'
+  else if (!showFilters.value && activeFilterCount.value == 0) return 'outline'
+}
+
+const getBadgeVariant = (estatus: string) => {
+  if (estatus == 'Cargada') return 'secondary';
+  if (estatus == 'Validada') return 'default';
+  if (estatus == 'Pagada') return 'success';
+  if (estatus == 'Rechazada') return 'destructive';
+}
 </script>
 
 <template>
@@ -251,8 +259,8 @@ watch([searchTerm, selectedEstatus, startDate, endDate, selectedFechaFiltro], ()
     <!-- Encabezado y Acciones Principales -->
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold md:text-3xl">Mis Facturas</h1>
-      <Button :variant="showFilters ? 'secondary' : 'outline'" @click="showFilters = !showFilters" :class="activeFilterCount > 0
-        ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
+      <Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
+        ? 'bg-primary font-bold text-white hover:bg-purple-600'
         : ''
         ">
         <Filter class="mr-2 h-4 w-4" />
@@ -271,100 +279,75 @@ watch([searchTerm, selectedEstatus, startDate, endDate, selectedFechaFiltro], ()
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <!-- UUID: Alineado a la izquierda (por defecto) -->
                     <TableHead>
                       <Button variant="ghost" @click="setSort('uuid')" class="px-1">
                         UUID
-                        <template v-if="sortKey === 'uuid'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        <!-- ...iconos... -->
                       </Button>
                     </TableHead>
+
+                    <!-- Tipo: Alineado a la izquierda -->
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Sociedad</TableHead>
-                    <TableHead>Doc. SAP</TableHead>
+
+                    <!-- Ejercicio Fiscal: Centrado -->
                     <TableHead class="text-center">Ejercicio Fiscal</TableHead>
-                    <TableHead class="text-center">Emisor</TableHead>
-                    <TableHead class="text-center">
-                      <Button variant="ghost" @click="setSort('estatus')" class="px-1">
-                        Estatus
-                        <template v-if="sortKey === 'estatus'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>
+
+                    <!-- Emisor: Alineado a la izquierda -->
+                    <TableHead>Emisor</TableHead>
+
+                    <!-- Estatus: Centrado -->
+                    <TableHead class="text-center">Estatus</TableHead>
+
+                    <!-- Importe: Alineado a la derecha -->
+                    <TableHead class="text-right">
                       <Button variant="ghost" @click="setSort('importe')" class="px-1">
                         Importe
-                        <template v-if="sortKey === 'importe'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        <!-- ...iconos... -->
                       </Button>
                     </TableHead>
+
+                    <!-- Moneda: Centrado -->
                     <TableHead class="text-center">Moneda</TableHead>
-                    <TableHead class="text-center w-20">
+
+                    <!-- Fechas: Centradas y con ancho fijo -->
+                    <TableHead class="w-28 text-center">
                       <Button variant="ghost" @click="setSort('fechaTimbrado')" class="px-1">
                         Fecha timbrado
-                        <template v-if="sortKey === 'fechaTimbrado'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        <!-- ...iconos... -->
                       </Button>
                     </TableHead>
-                    <TableHead class="text-center w-20">
+                    <TableHead class="w-28 text-center">
                       <Button variant="ghost" @click="setSort('fechaCarga')" class="px-1">
                         Fecha carga
-                        <template v-if="sortKey === 'fechaCarga'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        <!-- ...iconos... -->
                       </Button>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <template v-if="paginatedInvoices.length > 0">
-                    <TableRow v-for="inv in paginatedInvoices" :key="inv.uuid" class="hover:bg-muted/50">
-                      <TableCell class="font-mono">{{ inv.uuid }}</TableCell>
-                      <TableCell>{{ inv.tipo }}</TableCell>
-                      <TableCell>{{ inv.sociedad }}</TableCell>
-                      <TableCell>{{ inv.docSAP }}</TableCell>
-                      <TableCell class="text-center">{{ inv.ejercicioFiscal }}</TableCell>
-                      <TableCell class="text-center">{{ inv.emisor }}</TableCell>
-                      <TableCell class="text-center">
-                        <Badge :variant="{
-                          'Cargada': 'secondary',
-                          'Validada': 'default',
-                          'Pagada': 'success',
-                          'Rechazada': 'destructive'
-                        }[inv.estatus] || 'secondary'">
+                    <TableRow v-for="inv in paginatedInvoices" :key="inv.uuid"
+                      class="cursor-pointer transition-colors duration-150 "
+                      @click="$router.push({ name: 'invoice-detail', params: { uuid: inv.uuid } })">
+                      <!-- Celdas con las mismas clases de alineación que sus cabeceras -->
+                      <TableCell class="py-4 font-mono">{{ inv.uuid }}</TableCell>
+                      <TableCell class="py-4">{{ inv.tipo }}</TableCell>
+                      <TableCell class="py-4 text-center">{{ inv.ejercicioFiscal }}</TableCell>
+                      <TableCell class="py-4">{{ inv.emisor }}</TableCell>
+                      <TableCell class="py-4 text-center">
+                        <Badge :variant="getBadgeVariant(inv.estatus)">
                           {{ inv.estatus }}
                         </Badge>
                       </TableCell>
-                      <TableCell class="font-mono">{{ formatCurrency(inv.importe, inv.moneda) }}</TableCell>
-                      <TableCell class="text-center">{{ inv.moneda }}</TableCell>
-                      <TableCell class="text-center">{{ formatDate(inv.fechaTimbrado) }}</TableCell>
-                      <TableCell class="text-center">{{ formatDate(inv.fechaCarga) }}</TableCell>
-                    </TableRow>
-                  </template>
-                  <template v-else>
-                    <TableRow>
-                      <TableCell colspan="11" class="h-48 text-center">
-                        <div class="flex flex-col items-center justify-center gap-4">
-                          <FileText class="h-16 w-16 text-muted-foreground/50" />
-                          <p class="text-lg font-medium">No se encontraron facturas</p>
-                          <p class="text-sm text-muted-foreground">Intenta ajustar tu búsqueda o filtros.</p>
-                        </div>
+                      <TableCell class="py-4 font-mono text-right">{{ formatCurrency(inv.importe, inv.moneda) }}
                       </TableCell>
+                      <TableCell class="py-4 text-center">{{ inv.moneda }}</TableCell>
+                      <TableCell class="py-4 w-28 text-center">{{ formatDate(inv.fechaTimbrado) }}</TableCell>
+                      <TableCell class="py-4 w-28 text-center">{{ formatDate(inv.fechaCarga) }}</TableCell>
                     </TableRow>
                   </template>
+                  <!-- ... -->
                 </TableBody>
               </Table>
             </div>

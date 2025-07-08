@@ -225,6 +225,11 @@ function previousPage() {
 watch(filteredLogs, () => {
   currentPage.value = 1;
 });
+
+const getFiltersButtonVariant = () => {
+  if (showFilters.value) return 'default'
+  else if (!showFilters.value && activeFilterCount.value == 0) return 'outline'
+}
 </script>
 
 <template>
@@ -233,7 +238,7 @@ watch(filteredLogs, () => {
     <!-- Encabezado de la página -->
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-2xl font-bold md:text-3xl">Log de Peticiones HTTP</h1>
-      <Button :variant="showFilters ? 'secondary' : 'outline'" @click="showFilters = !showFilters" :class="activeFilterCount > 0
+      <Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
         ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
         : ''
         ">
@@ -268,8 +273,8 @@ watch(filteredLogs, () => {
                   <template v-if="paginatedLogs.length > 0">
                     <template v-for="log in paginatedLogs" :key="log.id">
                       <!-- Fila Principal -->
-                      <TableRow class="hover:bg-muted/50">
-                        <TableCell class="w-[50px] px-2 sm:px-4">
+                      <TableRow>
+                        <TableCell class="w-[50px] px-2 sm:px-4 py-3">
                           <Button variant="ghost" size="icon" @click="toggleRowExpansion(log.id)" class="h-7 w-7">
                             <ChevronDown v-if="!isRowExpanded(log.id)" class="h-4 w-4" />
                             <ChevronUp v-else class="h-4 w-4" />

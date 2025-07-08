@@ -2,7 +2,6 @@
 import { ref, computed, watch } from "vue";
 import {
   Filter,
-  FileText,
   Calendar as CalendarIcon,
 } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
@@ -37,59 +36,93 @@ import {
 } from "@internationalized/date";
 
 // --- Tipos y Datos Simulados ---
-interface Complemento {
-  uuid: string;
-  emisor: string;
-  receptor: string;
-  formaPago: string;
-  monto: number;
+interface Pago {
+  docContable: string;
+  proveedor: string;
+  sociedad: string;
   moneda: string;
+  monto: number;
+  estatus: "CONTABILIZADA" | "ACTIVO";
+  facturasAsociadas: number;
+  fechaDocumento: string;
   fechaCarga: string;
-  fechaTimbrado: string;
 }
 
-const allComplementos = ref<Complemento[]>([
+const allPagos = ref<Pago[]>([
   {
-    uuid: "CMP-001-AAA",
-    emisor: "Proveedor A",
-    receptor: "Cliente X",
-    formaPago: "Transferencia",
-    monto: 1200.50,
+    docContable: "1900000123",
+    proveedor: "Proveedor A",
+    sociedad: "1000",
     moneda: "MXN",
-    fechaCarga: "2024-06-10T12:00:00Z",
-    fechaTimbrado: "2024-06-10T13:00:00Z",
+    monto: 25000.75,
+    estatus: "CONTABILIZADA",
+    facturasAsociadas: 3,
+    fechaDocumento: "2024-06-10T10:00:00Z",
+    fechaCarga: "2024-06-11T12:00:00Z",
   },
   {
-    uuid: "CMP-002-BBB",
-    emisor: "Proveedor B",
-    receptor: "Cliente Y",
-    formaPago: "Efectivo",
-    monto: 800.00,
+    docContable: "1900000456",
+    proveedor: "Proveedor B",
+    sociedad: "2000",
     moneda: "USD",
-    fechaCarga: "2024-06-11T09:00:00Z",
-    fechaTimbrado: "2024-06-11T10:00:00Z",
+    monto: 5000,
+    estatus: "ACTIVO",
+    facturasAsociadas: 1,
+    fechaDocumento: "2024-06-15T09:30:00Z",
+    fechaCarga: "2024-06-15T10:00:00Z",
   },
   {
-    uuid: "CMP-003-CCC",
-    emisor: "Proveedor C",
-    receptor: "Cliente Z",
-    formaPago: "Tarjeta",
-    monto: 500.75,
+    docContable: "1900000789",
+    proveedor: "Proveedor C",
+    sociedad: "1000",
     moneda: "MXN",
-    fechaCarga: "2024-06-12T08:00:00Z",
-    fechaTimbrado: "2024-06-12T08:30:00Z",
+    monto: 18500,
+    estatus: "CONTABILIZADA",
+    facturasAsociadas: 2,
+    fechaDocumento: "2024-05-20T08:00:00Z",
+    fechaCarga: "2024-05-21T09:00:00Z",
+  },
+  {
+    docContable: "1900000999",
+    proveedor: "Proveedor D",
+    sociedad: "3000",
+    moneda: "EUR",
+    monto: 7500,
+    estatus: "ACTIVO",
+    facturasAsociadas: 1,
+    fechaDocumento: "2024-06-05T11:00:00Z",
+    fechaCarga: "2024-06-06T13:00:00Z",
+  },
+  {
+    docContable: "1900001234",
+    proveedor: "Proveedor A",
+    sociedad: "1000",
+    moneda: "MXN",
+    monto: 12000,
+    estatus: "CONTABILIZADA",
+    facturasAsociadas: 2,
+    fechaDocumento: "2024-06-18T14:00:00Z",
+    fechaCarga: "2024-06-19T09:00:00Z",
   },
 ]);
+
+// Lista única de proveedores para el filtro
+const proveedores = computed(() => {
+  const uniqueProveedores = new Set(allPagos.value.map(pago => pago.proveedor));
+  return Array.from(uniqueProveedores);
+});
 
 // --- Estado para Filtros y UI ---
 const showFilters = ref(false);
 const searchTerm = ref("");
-const selectedFechaFiltro = ref<"timbrado" | "carga">("timbrado");
+const selectedProveedor = ref<string | "all">("all");
+const selectedEstatus = ref<Pago["estatus"] | "all">("all");
+const selectedFechaFiltro = ref<"documento" | "carga">("documento");
 const startDate = ref<DateValue>();
 const endDate = ref<DateValue>();
 
 // --- Estado para Ordenación ---
-const sortKey = ref<keyof Complemento | null>("fechaCarga");
+const sortKey = ref<keyof Pago | null>("fechaCarga");
 const sortOrder = ref<"asc" | "desc">("desc");
 
 // --- Estado para Paginación ---
@@ -105,67 +138,90 @@ const df = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" });
 const activeFilterCount = computed(() => {
   let count = 0;
   if (searchTerm.value) count++;
+  if (selectedProveedor.value !== "all") count++;
+  if (selectedEstatus.value !== "all") count++;
   if (startDate.value || endDate.value) count++;
   return count;
 });
 
-// 2. Filtrar Complementos
-const filteredComplementos = computed(() => {
-  let complementos = allComplementos.value;
+// 2. Filtrar Pagos
+const filteredPagos = computed(() => {
+  let pagos = allPagos.value;
+
+  // Filtro por Doc. Contable
   if (searchTerm.value) {
     const lowerSearch = searchTerm.value.toLowerCase();
-    complementos = complementos.filter((c) =>
-      c.uuid.toLowerCase().includes(lowerSearch)
+    pagos = pagos.filter((pago) =>
+      pago.docContable.toLowerCase().includes(lowerSearch)
     );
   }
+
+  // Filtro por Proveedor
+  if (selectedProveedor.value !== "all") {
+    pagos = pagos.filter((pago) => pago.proveedor === selectedProveedor.value);
+  }
+
+  // Filtro por Estatus
+  if (selectedEstatus.value !== "all") {
+    pagos = pagos.filter((pago) => pago.estatus === selectedEstatus.value);
+  }
+
   // Filtro por fecha usando calendarios
   if (startDate.value || endDate.value) {
-    const key = selectedFechaFiltro.value === "timbrado" ? "fechaTimbrado" : "fechaCarga";
-    complementos = complementos.filter((c) => {
-      const fecha = new Date(c[key]);
+    const key = selectedFechaFiltro.value === "documento" ? "fechaDocumento" : "fechaCarga";
+    pagos = pagos.filter((pago) => {
+      const fecha = new Date(pago[key]);
       const desde = startDate.value ? startDate.value.toDate(getLocalTimeZone()) : null;
       const hasta = endDate.value ? endDate.value.toDate(getLocalTimeZone()) : null;
+
       if (desde) {
         desde.setHours(0, 0, 0, 0);
         if (fecha < desde) return false;
       }
+
       if (hasta) {
         hasta.setHours(23, 59, 59, 999);
         if (fecha > hasta) return false;
       }
+
       return true;
     });
   }
-  return complementos;
+
+  return pagos;
 });
 
-// 3. Ordenar Complementos Filtrados
-const sortedComplementos = computed(() => {
-  if (!sortKey.value) return filteredComplementos.value;
-  return [...filteredComplementos.value].sort((a, b) => {
+// 3. Ordenar Pagos Filtrados
+const sortedPagos = computed(() => {
+  if (!sortKey.value) return filteredPagos.value;
+
+  return [...filteredPagos.value].sort((a, b) => {
     const valA = a[sortKey.value!];
     const valB = b[sortKey.value!];
+
     if (typeof valA === "number" && typeof valB === "number") {
       return sortOrder.value === "asc" ? valA - valB : valB - valA;
     }
+
     if (typeof valA === "string" && typeof valB === "string") {
       if (valA < valB) return sortOrder.value === "asc" ? -1 : 1;
       if (valA > valB) return sortOrder.value === "asc" ? 1 : -1;
     }
+
     return 0;
   });
 });
 
-// 4. Paginar Complementos Ordenados
-const paginatedComplementos = computed(() => {
+// 4. Paginar Pagos Ordenados
+const paginatedPagos = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
-  return sortedComplementos.value.slice(start, end);
+  return sortedPagos.value.slice(start, end);
 });
 
 // 5. Calcular Total de Páginas
 const totalPages = computed(() => {
-  return Math.ceil(sortedComplementos.value.length / itemsPerPage.value);
+  return Math.ceil(sortedPagos.value.length / itemsPerPage.value);
 });
 
 // --- Métodos ---
@@ -173,13 +229,15 @@ const totalPages = computed(() => {
 // Limpiar filtros
 const clearFilters = () => {
   searchTerm.value = "";
+  selectedProveedor.value = "all";
+  selectedEstatus.value = "all";
   startDate.value = undefined;
   endDate.value = undefined;
-  selectedFechaFiltro.value = "timbrado";
+  selectedFechaFiltro.value = "documento";
 };
 
 // Cambiar ordenación
-const setSort = (key: keyof Complemento) => {
+const setSort = (key: keyof Pago) => {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
   } else {
@@ -196,23 +254,17 @@ const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.v
 // Helpers
 const formatDate = (dateString: string) => {
   try {
-    return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(dateString));
+    return new Intl.DateTimeFormat('es-ES', { dateStyle: 'short' }).format(new Date(dateString));
   } catch {
     return dateString;
   }
 };
+
 const formatCurrency = (amount: number, currency: string) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount);
 
-const getFormaPagoBadgeVariant = (forma: string): "default" | "secondary" | "outline" => {
-  const lowerForma = forma.toLowerCase();
-  if (lowerForma.includes("transferencia")) return "default";
-  if (lowerForma.includes("tarjeta")) return "outline";
-  return "secondary"; // Para Efectivo y otros
-};
-
 // Watchers
-watch([searchTerm, startDate, endDate, selectedFechaFiltro], () => {
+watch([searchTerm, selectedProveedor, selectedEstatus, startDate, endDate, selectedFechaFiltro], () => {
   currentPage.value = 1;
 });
 
@@ -226,7 +278,7 @@ const getFiltersButtonVariant = () => {
   <div class="container mx-auto py-6 md:py-10">
     <!-- Encabezado y Acciones Principales -->
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold md:text-3xl">Mis Complementos</h1>
+      <h1 class="text-2xl font-bold md:text-3xl">Pagos</h1>
       <Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
         ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
         : ''
@@ -247,73 +299,82 @@ const getFiltersButtonVariant = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <!-- Doc. Contable -->
                     <TableHead>
-                      <Button variant="ghost" @click="setSort('uuid')" class="px-1">
-                        UUID
-                        <!-- ...iconos... -->
+                      <Button variant="ghost" @click="setSort('docContable')" class="px-1">
+                        Doc. Contable
                       </Button>
                     </TableHead>
-                    <TableHead>Emisor</TableHead>
-                    <TableHead>Receptor</TableHead>
-                    <TableHead class="text-center">Forma de pago</TableHead>
+
+                    <!-- Proveedor -->
+                    <TableHead>Proveedor</TableHead>
+
+                    <!-- Sociedad -->
+                    <TableHead class="text-center">Sociedad</TableHead>
+
+                    <!-- Moneda -->
+                    <TableHead class="text-center">Moneda</TableHead>
+
+                    <!-- Monto -->
                     <TableHead class="text-right">
                       <Button variant="ghost" @click="setSort('monto')" class="px-1">
                         Monto
-                        <!-- ...iconos... -->
                       </Button>
                     </TableHead>
-                    <TableHead class="text-center">Moneda</TableHead>
+
+                    <!-- Estatus -->
+                    <TableHead class="text-center">Estatus</TableHead>
+
+                    <!-- Facturas Asociadas -->
+                    <TableHead class="text-center">Facturas Asociadas</TableHead>
+
+                    <!-- Fechas -->
+                    <TableHead class="w-28 text-center">
+                      <Button variant="ghost" @click="setSort('fechaDocumento')" class="px-1">
+                        Fecha Documento
+                      </Button>
+                    </TableHead>
                     <TableHead class="w-28 text-center">
                       <Button variant="ghost" @click="setSort('fechaCarga')" class="px-1">
-                        Fecha carga
-                        <!-- ...iconos... -->
-                      </Button>
-                    </TableHead>
-                    <TableHead class="w-28 text-center">
-                      <Button variant="ghost" @click="setSort('fechaTimbrado')" class="px-1">
-                        Fecha timbrado
-                        <!-- ...iconos... -->
+                        Fecha Carga
                       </Button>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <template v-if="paginatedComplementos.length > 0">
-                    <TableRow v-for="c in paginatedComplementos" :key="c.uuid" class="">
-                      <!-- Celdas con py-4 para más altura -->
-                      <TableCell class="font-mono py-3">{{ c.uuid }}</TableCell>
-                      <TableCell class="py-4">{{ c.emisor }}</TableCell>
-                      <TableCell class="py-4">{{ c.receptor }}</TableCell>
+                  <template v-if="paginatedPagos.length > 0">
+                    <TableRow v-for="pago in paginatedPagos" :key="pago.docContable"
+                      class="cursor-pointer transition-colors duration-150"
+                      @click="$router.push({ name: 'payments-detail', params: { doc_contable: pago.docContable } })">
+                      <!-- Celdas con las mismas clases de alineación que sus cabeceras -->
+                      <TableCell class="py-4 font-mono">{{ pago.docContable }}</TableCell>
+                      <TableCell class="py-4">{{ pago.proveedor }}</TableCell>
+                      <TableCell class="py-4 text-center">{{ pago.sociedad }}</TableCell>
+                      <TableCell class="py-4 text-center">{{ pago.moneda }}</TableCell>
+                      <TableCell class="py-4 font-mono text-right">{{ formatCurrency(pago.monto, pago.moneda) }}
+                      </TableCell>
                       <TableCell class="py-4 text-center">
-                        <!-- Badge para la forma de pago -->
-                        <Badge :variant="getFormaPagoBadgeVariant(c.formaPago)">
-                          {{ c.formaPago }}
+                        <Badge :variant="pago.estatus === 'CONTABILIZADA' ? 'success' : 'secondary'">
+                          {{ pago.estatus }}
                         </Badge>
                       </TableCell>
-                      <TableCell class="font-mono text-right">{{ formatCurrency(c.monto, c.moneda) }}</TableCell>
-                      <TableCell class="text-center">{{ c.moneda }}</TableCell>
-                      <TableCell class="w-28 text-center">{{ formatDate(c.fechaCarga) }}</TableCell>
-                      <TableCell class="w-28 text-center">{{ formatDate(c.fechaTimbrado) }}</TableCell>
+                      <TableCell class="py-4 text-center">{{ pago.facturasAsociadas }}</TableCell>
+                      <TableCell class="py-4 w-28 text-center">{{ formatDate(pago.fechaDocumento) }}</TableCell>
+                      <TableCell class="py-4 w-28 text-center">{{ formatDate(pago.fechaCarga) }}</TableCell>
                     </TableRow>
                   </template>
-                  <template v-else>
-                    <TableRow>
-                      <TableCell colspan="8" class="h-48 text-center">
-                        <div class="flex flex-col items-center justify-center gap-4">
-                          <FileText class="h-16 w-16 text-muted-foreground/50" />
-                          <p class="text-lg font-medium">No se encontraron complementos</p>
-                          <p class="text-sm text-muted-foreground">Intenta ajustar tu búsqueda o filtros.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </template>
+                  <TableRow v-if="paginatedPagos.length === 0">
+                    <TableCell colspan="9" class="h-24 text-center">
+                      No se encontraron pagos con los filtros seleccionados.
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>
           </CardContent>
           <CardFooter class="flex items-center justify-between border-t px-6 py-4">
             <div class="text-sm text-muted-foreground">
-              Mostrando {{ paginatedComplementos.length }} de {{ sortedComplementos.length }} complementos.
+              Mostrando {{ paginatedPagos.length }} de {{ sortedPagos.length }} pagos.
             </div>
             <div class="flex items-center space-x-2">
               <Button variant="outline" size="sm" @click="prevPage" :disabled="currentPage === 1">
@@ -339,10 +400,44 @@ const getFiltersButtonVariant = () => {
               <CardTitle>Filtros</CardTitle>
             </CardHeader>
             <CardContent class="flex flex-col gap-6">
+              <!-- Filtro por Doc. Contable -->
               <div class="flex flex-col gap-2">
-                <Label for="search-filter">Buscar por UUID</Label>
-                <Input id="search-filter" placeholder="UUID..." v-model="searchTerm" />
+                <Label for="search-filter">Buscar por Doc. Contable</Label>
+                <Input id="search-filter" placeholder="Doc. Contable..." v-model="searchTerm" />
               </div>
+
+              <!-- Filtro por Proveedor -->
+              <div class="flex flex-col gap-2">
+                <Label for="proveedor-filter">Proveedor</Label>
+                <Select v-model="selectedProveedor">
+                  <SelectTrigger id="proveedor-filter">
+                    <SelectValue placeholder="Filtrar por Proveedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem v-for="proveedor in proveedores" :key="proveedor" :value="proveedor">
+                      {{ proveedor }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <!-- Filtro por Estatus -->
+              <div class="flex flex-col gap-2">
+                <Label for="estatus-filter">Estatus</Label>
+                <Select v-model="selectedEstatus">
+                  <SelectTrigger id="estatus-filter">
+                    <SelectValue placeholder="Filtrar por Estatus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="CONTABILIZADA">CONTABILIZADA</SelectItem>
+                    <SelectItem value="ACTIVO">ACTIVO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <!-- Filtro por Fecha -->
               <div class="flex flex-col gap-2">
                 <Label>Filtrar por fecha</Label>
                 <Select v-model="selectedFechaFiltro">
@@ -350,7 +445,7 @@ const getFiltersButtonVariant = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="timbrado">Timbrado</SelectItem>
+                    <SelectItem value="documento">Documento</SelectItem>
                     <SelectItem value="carga">Carga</SelectItem>
                   </SelectContent>
                 </Select>

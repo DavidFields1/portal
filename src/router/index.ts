@@ -40,6 +40,17 @@ const router = createRouter({
 					component: () => import('@/views/MyInvoices.vue'), // Carga lazy
 				},
 				{
+					path: 'invoices-monitor', // Nueva ruta
+					name: 'invoices-monitor',
+					component: () => import('@/views/InvoicesMonitorView.vue'), // Carga lazy
+				},
+				{
+					path: '/invoices/:uuid',
+					name: 'invoice-detail',
+					component: () => import('@/views/InvoiceDetailView.vue'),
+					props: true,
+				},
+				{
 					path: 'invoice-upload', // Nueva ruta
 					name: 'invoice-upload',
 					component: () => import('@/views/POInvoiceUploadView.vue'), // Carga lazy
@@ -58,6 +69,26 @@ const router = createRouter({
 					path: 'http-logs', // Nueva ruta
 					name: 'http-logs',
 					component: () => import('@/views/HttpLogView.vue'), // Carga lazy
+				},
+				{
+					path: 'payments', // Nueva ruta
+					name: 'payments',
+					component: () => import('@/views/PaymentsView.vue'), // Carga lazy
+				},
+				{
+					path: 'payments/:doc_contable', // Nueva ruta
+					name: 'payments-detail',
+					component: () => import('@/views/PaymentDetailView.vue'), // Carga lazy
+				},
+				{
+					path: 'purchase-order', // Nueva ruta
+					name: 'purchase-order',
+					component: () => import('@/views/PurchaseOrderView.vue'), // Carga lazy
+				},
+				{
+					path: 'purchase-order/:id', // Nueva ruta
+					name: 'purchase-order-detail',
+					component: () => import('@/views/PurchaseOrderDetailView.vue'), // Carga lazy
 				},
 				// --- Añade aquí otras rutas protegidas ---
 				// Ejemplo:

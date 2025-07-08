@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -13,12 +13,29 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "vue-sonner";
-import { UploadCloud, CheckCircle, FileText } from "lucide-vue-next";
+import {
+  UploadCloud, CheckCircle, FileText, Users, X, ChevronsUpDown, Check
+} from "lucide-vue-next";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 // --- Estructuras de Datos Enriquecidas ---
 interface GoodsReceipt {
   id: string;
   number: string;
+  material: string;
+  iva: number;
   date: string;
   amount: number;
   itemCount: number;
@@ -30,44 +47,63 @@ interface PurchaseOrder {
   id: string;
   number: string;
   supplier: string;
+  supplierId: string;
+  supplierRfc: string; // NUEVO
   date: string;
   totalAmount: number;
   status: 'Abierta' | 'Cerrada Parcialmente' | 'Cerrada';
   goodsReceipts: GoodsReceipt[];
 }
 
-// --- Datos Simulados Enriquecidos ---
+// --- Datos Simulados Enriquecidos (MÁS DATOS) ---
 const purchaseOrders = ref<PurchaseOrder[]>([
+  // Proveedor A Tech
   {
-    id: 'po_001', number: 'OC-2024-055', supplier: 'Proveedor A Tech', date: '2024-05-01', totalAmount: 850.25, status: 'Cerrada Parcialmente',
+    id: 'po_001', number: 'OC-2024-055', supplier: 'Proveedor A Tech', supplierId: 'supp_A', supplierRfc: 'ATE123456XYZ', date: '2024-05-01', totalAmount: 850.25, status: 'Cerrada Parcialmente',
     goodsReceipts: [
-      { id: 'gr_101', number: 'EM-101A', date: '2024-05-10', amount: 500.25, itemCount: 5, status: 'Pendiente de Factura', poNumber: 'OC-2024-055' },
-      { id: 'gr_102', number: 'EM-102A', date: '2024-05-12', amount: 350.00, itemCount: 3, status: 'Facturado', poNumber: 'OC-2024-055' },
+      { id: 'gr_101', number: 'EM-101A', material: 'Laptop Pro 15"', iva: 80.04, date: '2024-05-10', amount: 500.25, itemCount: 5, status: 'Pendiente de Factura', poNumber: 'OC-2024-055' },
+      { id: 'gr_102', number: 'EM-102A', material: 'Mouse Inalámbrico', iva: 56.00, date: '2024-05-12', amount: 350.00, itemCount: 1, status: 'Facturado', poNumber: 'OC-2024-055' },
     ]
   },
   {
-    id: 'po_002', number: 'OC-2024-058', supplier: 'Proveedor B Industrial', date: '2024-05-03', totalAmount: 1200.00, status: 'Abierta',
+    id: 'po_003', number: 'OC-2024-059', supplier: 'Proveedor A Tech', supplierId: 'supp_A', supplierRfc: 'ATE123456XYZ', date: '2024-05-05', totalAmount: 1102.50, status: 'Abierta',
     goodsReceipts: [
-      { id: 'gr_201', number: 'EM-201B', date: '2024-05-11', amount: 1200.00, itemCount: 1, status: 'Pendiente de Factura', poNumber: 'OC-2024-058' },
+      { id: 'gr_301', number: 'EM-301A', material: 'Monitor 4K', iva: 96.40, date: '2024-05-14', amount: 602.50, itemCount: 10, status: 'Pendiente de Factura', poNumber: 'OC-2024-059' },
+      { id: 'gr_302', number: 'EM-302A', material: 'Teclado Mecánico', iva: 80.00, date: '2024-05-15', amount: 500.00, itemCount: 8, status: 'Pendiente de Factura', poNumber: 'OC-2024-059' },
+    ]
+  },
+  // Proveedor B Industrial
+  {
+    id: 'po_002', number: 'OC-2024-058', supplier: 'Proveedor B Industrial', supplierId: 'supp_B', supplierRfc: 'BIN456789ABC', date: '2024-05-03', totalAmount: 1200.00, status: 'Abierta',
+    goodsReceipts: [
+      { id: 'gr_201', number: 'EM-201B', material: 'Torno CNC', iva: 192.00, date: '2024-05-11', amount: 1200.00, itemCount: 1, status: 'Pendiente de Factura', poNumber: 'OC-2024-058' },
+    ]
+  },
+  // Proveedor C Oficina
+  {
+    id: 'po_004', number: 'OC-2024-060', supplier: 'Proveedor C Oficina', supplierId: 'supp_C', supplierRfc: 'COF789123DEF', date: '2024-05-06', totalAmount: 300.00, status: 'Cerrada',
+    goodsReceipts: [
+      { id: 'gr_401', number: 'EM-401C', material: 'Sillas de Oficina', iva: 48.00, date: '2024-05-16', amount: 300.00, itemCount: 25, status: 'Facturado', poNumber: 'OC-2024-060' },
     ]
   },
   {
-    id: 'po_003', number: 'OC-2024-059', supplier: 'Proveedor A Tech', date: '2024-05-05', totalAmount: 1102.50, status: 'Abierta',
+    id: 'po_005', number: 'OC-2024-061', supplier: 'Proveedor C Oficina', supplierId: 'supp_C', supplierRfc: 'COF789123DEF', date: '2024-05-08', totalAmount: 150.00, status: 'Abierta',
     goodsReceipts: [
-      { id: 'gr_301', number: 'EM-301A', date: '2024-05-14', amount: 602.50, itemCount: 10, status: 'Pendiente de Factura', poNumber: 'OC-2024-059' },
-      { id: 'gr_302', number: 'EM-302A', date: '2024-05-15', amount: 500.00, itemCount: 8, status: 'Pendiente de Factura', poNumber: 'OC-2024-059' },
+      { id: 'gr_501', number: 'EM-501C', material: 'Papel Bond (Caja)', iva: 24.00, date: '2024-05-18', amount: 150.00, itemCount: 50, status: 'Pendiente de Factura', poNumber: 'OC-2024-061' },
     ]
   },
+  // Proveedor D Logística
   {
-    id: 'po_004', number: 'OC-2024-060', supplier: 'Proveedor C Oficina', date: '2024-05-06', totalAmount: 300.00, status: 'Cerrada',
+    id: 'po_006', number: 'OC-2024-062', supplier: 'Proveedor D Logística', supplierId: 'supp_D', supplierRfc: 'DLO012345GHI', date: '2024-05-10', totalAmount: 2500.00, status: 'Abierta',
     goodsReceipts: [
-      { id: 'gr_401', number: 'EM-401C', date: '2024-05-16', amount: 300.00, itemCount: 25, status: 'Facturado', poNumber: 'OC-2024-060' },
+      { id: 'gr_601', number: 'EM-601D', material: 'Servicio de Flete Nacional', iva: 400.00, date: '2024-05-20', amount: 2500.00, itemCount: 1, status: 'Pendiente de Factura', poNumber: 'OC-2024-062' },
     ]
-  }
+  },
 ]);
 
 // --- Estado del Stepper ---
 const steps = ref([
+  { id: "select_supplier", name: "Seleccionar Proveedor", icon: Users },
   { id: "select_gr", name: "Seleccionar Entradas", icon: CheckCircle },
   { id: "upload_invoice", name: "Subir Factura", icon: UploadCloud },
   { id: "confirm", name: "Confirmar", icon: FileText },
@@ -75,219 +111,209 @@ const steps = ref([
 const currentStepIndex = ref(0);
 
 // --- Estado de Selección ---
+const isSupplierPopoverOpen = ref(false);
+const selectedSupplierId = ref<string | null>(null);
 const selectedPOId = ref<string | null>(null);
 const selectedGRs = ref<GoodsReceipt[]>([]);
-const currentSupplier = ref<string | null>(null);
+const currentSupplierName = ref<string | null>(null);
 
-// --- NUEVAS VARIABLES PARA SUBIDA DE ARCHIVOS ---
+// --- Variables para subida de archivos ---
 const selectedFile = ref<File | null>(null);
 
-// --- Estado de checkboxes ---
-const checkboxStates = ref<Record<string, boolean>>({});
-
 // --- Lógica Computada ---
+const allSuppliers = computed(() => {
+  const suppliers = new Map<string, { id: string, name: string, rfc: string }>();
+  purchaseOrders.value.forEach(po => {
+    if (!suppliers.has(po.supplierId)) {
+      suppliers.set(po.supplierId, { id: po.supplierId, name: po.supplier, rfc: po.supplierRfc });
+    }
+  });
+  return Array.from(suppliers.values());
+});
+
+const filteredPurchaseOrders = computed(() => {
+  if (!selectedSupplierId.value) return [];
+  return purchaseOrders.value.filter(po => po.supplierId === selectedSupplierId.value);
+});
+
 const selectedPO = computed(() => purchaseOrders.value.find(po => po.id === selectedPOId.value));
 const totalSelectedAmount = computed(() => selectedGRs.value.reduce((sum, gr) => sum + gr.amount, 0));
 
+// --- Métodos ---
+const selectSupplier = (supplier: { id: string, name: string, rfc: string }) => {
+  selectedSupplierId.value = supplier.id;
+  currentSupplierName.value = supplier.name;
+  isSupplierPopoverOpen.value = false;
+  currentStepIndex.value = 1; // Avanza al siguiente paso
+};
 
+const resetSupplierSelection = () => {
+  selectedSupplierId.value = null;
+  currentSupplierName.value = null;
+  selectedPOId.value = null;
+  selectedGRs.value = [];
+  currentStepIndex.value = 0;
+};
 
-// --- Métodos Existentes ---
 const selectPO = (poId: string) => {
   selectedPOId.value = poId;
 };
 
-const isPOSelectable = (po: PurchaseOrder) => {
-  if (!currentSupplier.value) {
-    return true;
-  }
-  return po.supplier === currentSupplier.value;
-};
-
-const toggleGRSelection = (gr: GoodsReceipt, supplier: string) => {
-  console.log(
-    `toggleGRSelection llamada para GR: ${gr.id}. Proveedor: ${supplier}`,
-  );
-
+const toggleGRSelection = (gr: GoodsReceipt) => {
   if (gr.status === "Facturado") {
     toast.info("Esta entrada ya ha sido facturada y no se puede seleccionar.");
     return;
   }
-
-  if (currentSupplier.value === null) {
-    console.log(`Primer item. Bloqueando proveedor a: ${supplier}`);
-    currentSupplier.value = supplier;
-    selectedGRs.value.push(gr);
+  const idx = selectedGRs.value.findIndex((g) => g.id === gr.id);
+  if (idx !== -1) {
+    selectedGRs.value.splice(idx, 1);
   } else {
-    if (supplier === currentSupplier.value) {
-      const idx = selectedGRs.value.findIndex((g) => g.id === gr.id);
-      if (idx !== -1) {
-        console.log(`Quitando item: ${gr.id}`);
-        selectedGRs.value.splice(idx, 1);
-      } else {
-        console.log(`Añadiendo item: ${gr.id}`);
-        selectedGRs.value.push(gr);
-      }
-    } else {
-      toast.error(
-        "Solo se pueden seleccionar entradas del mismo proveedor.",
-        {
-          description: `Proveedor actual: ${currentSupplier.value}. Intentaste añadir de: ${supplier}.`,
-        },
-      );
-      return;
-    }
+    selectedGRs.value.push(gr);
   }
-
-  if (selectedGRs.value.length === 0) {
-    console.log("La selección está vacía. Liberando proveedor.");
-    currentSupplier.value = null;
-  }
-
-  console.log(
-    `Función completada. Seleccionados AHORA: ${selectedGRs.value.length}`,
-  );
-
-
 };
 
-// --- NUEVAS FUNCIONES PARA MANEJO DE ARCHIVOS ---
+const removeSelectedGR = (grId: string) => {
+  const idx = selectedGRs.value.findIndex((g) => g.id === grId);
+  if (idx !== -1) {
+    selectedGRs.value.splice(idx, 1);
+  }
+};
+
 const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-
   if (file) {
-    // Validar tamaño (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('El archivo es demasiado grande', {
-        description: 'Por favor selecciona un archivo menor a 10MB'
-      });
+      toast.error('El archivo es demasiado grande', { description: 'Por favor selecciona un archivo menor a 10MB' });
       return;
     }
-
-    // Validar tipo de archivo
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Tipo de archivo no válido', {
-        description: 'Solo se permiten archivos PDF, JPG o PNG'
-      });
+      toast.error('Tipo de archivo no válido', { description: 'Solo se permiten archivos PDF, JPG o PNG' });
       return;
     }
-
     selectedFile.value = file;
-    toast.success('Archivo cargado correctamente', {
-      description: `${file.name} está listo para procesar`
-    });
+    toast.success('Archivo cargado correctamente', { description: `${file.name} está listo para procesar` });
   }
 };
 
 const removeFile = () => {
   selectedFile.value = null;
-  // Limpiar el input file
   const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
-  if (fileInput) {
-    fileInput.value = '';
-  }
+  if (fileInput) fileInput.value = '';
 };
 
 const isSubmitting = ref(false);
+const isSelectionLocked = computed(() => currentStepIndex.value > 1);
 
-const isSelectionLocked = computed(() => currentStepIndex.value > 0);
+const fakeApiService = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 2000));
 
-const fakeApiService = () => {
-  return new Promise(resolve => {
-    console.log("Enviando datos al backend...");
-    setTimeout(() => {
-      console.log("Respuesta recibida del backend.");
-      resolve({ success: true });
-    }, 2000); // Simula un retraso de 2 segundos
-  });
-};
-
-const isGRSelected = (grId: string) => {
-  return selectedGRs.value.some(g => g.id === grId);
-};
+const isGRSelected = (grId: string) => selectedGRs.value.some(g => g.id === grId);
 
 const submitInvoice = async () => {
-  if (isSubmitting.value) return; // Prevenir dobles clics
-
-  isSubmitting.value = true; // Inicia el estado de carga
-
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
   try {
-    // Llama al servicio simulado y espera la respuesta
     await fakeApiService();
-
-    // Muestra el mensaje de éxito
-    toast.success('Factura cargada exitosamente', {
-      description: `Se procesaron ${selectedGRs.value.length} entradas de mercancía.`
-    });
-
-    // Limpia todo el formulario
-    selectedGRs.value = [];
-    currentSupplier.value = null;
+    toast.success('Factura cargada exitosamente', { description: `Se procesaron ${selectedGRs.value.length} entradas de mercancía.` });
+    resetSupplierSelection();
     selectedFile.value = null;
-    selectedPOId.value = null;
-    currentStepIndex.value = 0;
-
-
   } catch (error) {
-    // Manejo de errores en caso de que el servicio falle
-    toast.error('Error al cargar la factura', {
-      description: 'Por favor, inténtalo de nuevo más tarde.'
-    });
-    console.error("Error en la llamada al servicio:", error);
+    console.log(error)
+    toast.error('Error al cargar la factura', { description: 'Por favor, inténtalo de nuevo más tarde.' });
   } finally {
-    // Detiene el estado de carga, sin importar si hubo éxito o error
     isSubmitting.value = false;
   }
 };
 
-// --- Funciones de utilidad ---
 const formatCurrency = (amount: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
-const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { currentStepIndex.value++; } };
-</script>
+const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) currentStepIndex.value++; };
+const prevStep = () => { if (currentStepIndex.value > 0) currentStepIndex.value--; };
 
+watch(selectedSupplierId, (newVal) => {
+  if (!newVal) {
+    resetSupplierSelection();
+  }
+});
+</script>
 
 <template>
   <Toaster richColors position="top-right" />
-
   <div class="container mx-auto py-6 md:py-10">
     <h1 class="mb-6 text-2xl font-bold md:text-3xl">Carga de Factura con OC</h1>
-
-    <!-- NUEVO LAYOUT: 3 COLUMNAS -->
     <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
-
-      <!-- COLUMNA IZQUIERDA: Lista de OCs (3/10 del ancho) -->
-      <div class="lg:col-span-3" :class="{ 'opacity-60 pointer-events-none': isSelectionLocked }">
+      <!-- COLUMNA IZQUIERDA: Selección de Proveedor y OC -->
+      <div class="lg:col-span-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Órdenes de Compra</CardTitle>
-            <CardDescription>Selecciona una orden para ver sus entradas</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-2">
-            <Button v-for="po in purchaseOrders" :key="po.id" variant="ghost"
-              class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm" :class="{
-                'bg-accent border-l-4 border-l-primary': selectedPOId === po.id,
-                'opacity-50 cursor-not-allowed': !isPOSelectable(po)
-              }" :disabled="!isPOSelectable(po)" @click="selectPO(po.id)">
-
-              <div class="flex w-full justify-between items-center">
-                <span class="font-semibold text-sm">{{ po.number }}</span>
-                <Badge variant="outline" class="text-xs">{{ po.status }}</Badge>
+          <!-- Vista de Selección de Proveedor -->
+          <template v-if="!selectedSupplierId">
+            <CardHeader>
+              <CardTitle>Proveedores</CardTitle>
+              <CardDescription>Busca y selecciona un proveedor</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Popover v-model:open="isSupplierPopoverOpen">
+                <PopoverTrigger as-child>
+                  <Button variant="outline" role="combobox" :aria-expanded="isSupplierPopoverOpen"
+                    class="w-full justify-between">
+                    {{ currentSupplierName || "Seleccionar proveedor..." }}
+                    <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar proveedor..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontró el proveedor.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem v-for="supplier in allSuppliers" :key="supplier.id" :value="supplier.name"
+                          @select="() => selectSupplier(supplier)" class="flex items-center">
+                          <Check class="mr-2 h-4 w-4"
+                            :class="selectedSupplierId === supplier.id ? 'opacity-100' : 'opacity-0'" />
+                          <div class="flex flex-col">
+                            <span>{{ supplier.name }}</span>
+                            <span class="text-xs text-muted-foreground">{{ supplier.rfc }}</span>
+                          </div>
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </CardContent>
+          </template>
+          <!-- Vista de Selección de OC -->
+          <template v-else>
+            <CardHeader>
+              <div class="flex justify-between items-center">
+                <div>
+                  <CardTitle>Órdenes de Compra</CardTitle>
+                  <CardDescription>{{ currentSupplierName }}</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" @click="resetSupplierSelection">Cambiar</Button>
               </div>
-              <span class="text-xs text-muted-foreground">{{ po.supplier }}</span>
-              <div class="flex w-full justify-between text-xs text-muted-foreground mt-1">
-                <span>{{ po.date }}</span>
-                <span class="font-mono">{{ formatCurrency(po.totalAmount) }}</span>
-              </div>
-            </Button>
-          </CardContent>
+            </CardHeader>
+            <CardContent class="space-y-2 max-h-[60vh] overflow-y-auto">
+              <Button v-for="po in filteredPurchaseOrders" :key="po.id" variant="ghost"
+                class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm" :class="{
+                  'bg-accent border-l-4 border-l-primary': selectedPOId === po.id,
+                }" @click="selectPO(po.id)">
+                <div class="flex w-full justify-between items-center">
+                  <span class="font-semibold text-sm">{{ po.number }}</span>
+                  <Badge variant="outline" class="text-xs">{{ po.status }}</Badge>
+                </div>
+                <div class="flex w-full justify-between text-xs text-muted-foreground mt-1">
+                  <span>{{ po.date }}</span>
+                  <span class="font-mono">{{ formatCurrency(po.totalAmount) }}</span>
+                </div>
+              </Button>
+            </CardContent>
+          </template>
         </Card>
       </div>
 
-      <!-- COLUMNA CENTRAL: Panel Dinámico (4/10 del ancho) -->
+      <!-- COLUMNA CENTRAL: Entradas y Selección -->
       <div class="lg:col-span-4 space-y-4" :class="{ 'opacity-60 pointer-events-none': isSelectionLocked }">
-
-        <!-- SECCIÓN SUPERIOR: Entradas de Mercancía -->
         <Card>
           <CardHeader v-if="selectedPO">
             <CardTitle class="text-lg">Entradas de Mercancía</CardTitle>
@@ -295,71 +321,60 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
               <span class="font-medium">{{ selectedPO.number }}</span> - {{ selectedPO.supplier }}
             </CardDescription>
           </CardHeader>
-
           <CardContent>
-            <!-- Sin OC seleccionada -->
             <div v-if="!selectedPO" class="text-center py-8 text-muted-foreground">
               <FileText class="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p class="text-lg font-medium">Selecciona una orden de compra</p>
               <p class="text-sm">para ver sus entradas de mercancía</p>
             </div>
-
-            <!-- OC seleccionada con entradas -->
             <div v-else-if="selectedPO.goodsReceipts.length > 0" class="space-y-3">
               <div v-for="gr in selectedPO.goodsReceipts" :key="gr.id"
                 class="rounded-lg border p-3 transition-all hover:shadow-sm" :class="{
                   'opacity-50 cursor-not-allowed': gr.status === 'Facturado',
-                  'border-primary/50 bg-primary/5': checkboxStates[gr.id]
                 }">
-
                 <Label :for="`native-${gr.id}`" class="flex items-start space-x-3 w-full cursor-pointer">
-
                   <input type="checkbox" :id="`native-${gr.id}`" :checked="isGRSelected(gr.id)"
                     :disabled="gr.status === 'Facturado'"
                     class="w-4 h-4 rounded border-input bg-background text-primary accent-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    @change="toggleGRSelection(gr, selectedPO.supplier)" />
-
+                    @change="toggleGRSelection(gr)" />
                   <div class="flex-1 min-w-0">
                     <div class="flex justify-between items-start mb-1">
                       <span class="font-medium text-sm">{{ gr.number }}</span>
                       <span class="font-mono text-sm font-semibold">{{ formatCurrency(gr.amount) }}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-muted-foreground mb-2">
+                    <p class="font-bold text-sm text-foreground">{{ gr.material }}</p>
+                    <div class="flex justify-between text-xs text-muted-foreground mt-2">
                       <span>{{ gr.date }}</span>
-                      <span>{{ gr.itemCount }} ítems</span>
+                      <span>IVA: {{ formatCurrency(gr.iva) }}</span>
                     </div>
-                    <Badge variant="secondary" class="text-xs"
-                      :class="{ 'bg-green-100 text-green-800': gr.status === 'Facturado' }">
-                      {{ gr.status }}
-                    </Badge>
                   </div>
                 </Label>
               </div>
             </div>
-
-            <!-- OC sin entradas -->
             <div v-else class="text-center py-6 text-muted-foreground">
               <p>Esta orden no tiene entradas de mercancía</p>
             </div>
           </CardContent>
         </Card>
 
-        <!-- SECCIÓN INFERIOR: Resumen de Selección -->
         <Card v-if="selectedGRs.length > 0">
           <CardHeader>
             <CardTitle class="text-lg flex items-center justify-between">
               <span>Selección Actual</span>
               <Badge variant="secondary">{{ selectedGRs.length }} entrada(s)</Badge>
             </CardTitle>
-            <CardDescription>
-              Proveedor: <span class="font-medium text-foreground">{{ currentSupplier }}</span>
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div class="space-y-2 mb-4">
-              <div v-for="gr in selectedGRs" :key="gr.id" class="flex justify-between items-center text-sm">
-                <span class="font-medium">{{ gr.number }}</span>
-                <span class="font-mono">{{ formatCurrency(gr.amount) }}</span>
+              <div v-for="gr in selectedGRs" :key="gr.id"
+                class="flex justify-between items-center text-sm p-2 rounded-md hover:bg-muted/50">
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium truncate">{{ gr.number }} - {{ gr.material }}</p>
+                  <p class="font-mono text-xs text-muted-foreground">{{ formatCurrency(gr.amount) }}</p>
+                </div>
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="removeSelectedGR(gr.id)">
+                  <X class="h-4 w-4" />
+                </Button>
               </div>
             </div>
             <Separator class="my-3" />
@@ -367,20 +382,16 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
               <span>Total Seleccionado:</span>
               <span class="text-lg">{{ formatCurrency(totalSelectedAmount) }}</span>
             </div>
-            <Button variant="outline" size="sm" class="w-full mt-3" @click="selectedGRs = []; currentSupplier = null">
-              Limpiar Selección
-            </Button>
           </CardContent>
         </Card>
       </div>
 
-      <!-- COLUMNA DERECHA: Stepper (3/10 del ancho) -->
+      <!-- COLUMNA DERECHA: Stepper -->
       <div class="lg:col-span-3">
         <Card>
           <CardHeader>
             <CardTitle>Proceso de Carga</CardTitle>
             <nav aria-label="Progreso de carga" class="mt-4">
-              <!-- Stepper Visual -->
               <ol class="space-y-4">
                 <li v-for="(step, index) in steps" :key="step.id" class="flex items-center text-sm">
                   <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mr-3" :class="{
@@ -404,80 +415,58 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
           </CardHeader>
           <Separator />
           <CardContent class="mt-4">
-            <!-- Contenido del paso actual -->
-            <div v-if="currentStepIndex === 0" class="space-y-4">
+            <!-- Paso 0 y 1: Seleccionar Proveedor y Entradas -->
+            <div v-if="currentStepIndex === 0" class="text-center text-muted-foreground py-4">
+              <p class="text-sm">Selecciona un proveedor para comenzar.</p>
+            </div>
+
+            <!-- Paso 1: Seleccionar Entradas (CORREGIDO) -->
+            <div v-if="currentStepIndex === 1" class="space-y-4">
               <div v-if="selectedGRs.length === 0" class="text-center text-muted-foreground py-4">
-                <p class="text-sm">Selecciona entradas de mercancía para continuar</p>
+                <p class="text-sm">Selecciona una o más entradas de mercancía para continuar.</p>
               </div>
               <div v-else class="space-y-4">
                 <div class="text-center">
                   <div class="text-2xl font-bold text-primary">{{ selectedGRs.length }}</div>
                   <div class="text-xs text-muted-foreground">entrada(s) seleccionada(s)</div>
                 </div>
-                <Button @click="nextStep" class="w-full" :disabled="selectedGRs.length === 0">
-                  Continuar →
-                </Button>
+                <Button size="sm" class="w-full" @click="nextStep">Continuar →</Button>
               </div>
             </div>
-
             <!-- Paso 2: Subir Factura -->
-            <div v-if="currentStepIndex === 1" class="space-y-4">
+            <div v-if="currentStepIndex === 2" class="space-y-4">
               <h4 class="font-semibold">Subir Factura</h4>
               <div class="text-sm text-muted-foreground space-y-2">
-                <p>
-                  Total de entradas seleccionadas:
-                  <span class="font-bold text-foreground">{{ formatCurrency(totalSelectedAmount) }}</span>
-                </p>
-                <p>
-                  Proveedor:
-                  <span class="font-medium text-foreground">{{ currentSupplier }}</span>
-                </p>
+                <p>Total: <span class="font-bold text-foreground">{{ formatCurrency(totalSelectedAmount) }}</span></p>
+                <p>Proveedor: <span class="font-medium text-foreground">{{ currentSupplierName }}</span></p>
               </div>
-
-              <!-- Área de subida de archivo -->
               <div
                 class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
                 <input type="file" id="invoice-upload" accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
                   @change="handleFileUpload" />
-
                 <label for="invoice-upload" class="cursor-pointer">
                   <UploadCloud class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                   <p class="text-sm font-medium mb-1">Haz clic para subir la factura</p>
                   <p class="text-xs text-muted-foreground">PDF, JPG, PNG hasta 10MB</p>
                 </label>
               </div>
-
-              <!-- Archivo seleccionado -->
               <div v-if="selectedFile" class="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div class="flex items-center space-x-2">
                   <FileText class="h-4 w-4 text-muted-foreground" />
                   <span class="text-sm font-medium">{{ selectedFile.name }}</span>
-                  <Badge variant="secondary" class="text-xs">
-                    {{ (selectedFile.size / 1024 / 1024).toFixed(1) }} MB
+                  <Badge variant="secondary" class="text-xs">{{ (selectedFile.size / 1024 / 1024).toFixed(1) }} MB
                   </Badge>
                 </div>
-                <Button variant="ghost" size="sm" @click="removeFile">
-                  ✕
-                </Button>
+                <Button variant="ghost" size="sm" @click="removeFile">✕</Button>
               </div>
-
-              <!-- Botones de navegación -->
               <div class="flex space-x-2 pt-4">
-                <Button variant="outline" size="sm" class="flex-1" @click="currentStepIndex--">
-                  ← Volver
-                </Button>
-                <Button size="sm" class="flex-1" :disabled="!selectedFile" @click="nextStep">
-                  Continuar →
-                </Button>
+                <Button variant="outline" size="sm" class="flex-1" @click="prevStep">← Volver</Button>
+                <Button size="sm" class="flex-1" :disabled="!selectedFile" @click="nextStep">Continuar →</Button>
               </div>
             </div>
-
             <!-- Paso 3: Confirmar -->
-            <!-- Paso 3: Confirmar -->
-            <div v-if="currentStepIndex === 2" class="space-y-4">
+            <div v-if="currentStepIndex === 3" class="space-y-4">
               <h4 class="font-semibold">Confirmación Final</h4>
-
-              <!-- Resumen -->
               <div class="space-y-3 text-sm">
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Entradas:</span>
@@ -485,7 +474,7 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Proveedor:</span>
-                  <span class="font-medium">{{ currentSupplier }}</span>
+                  <span class="font-medium">{{ currentSupplierName }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Total:</span>
@@ -496,17 +485,10 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
                   <span class="font-medium">{{ selectedFile?.name }}</span>
                 </div>
               </div>
-
-              <!-- Botones finales -->
               <div class="flex space-x-2 pt-4">
-                <Button variant="outline" size="sm" class="flex-1" @click="currentStepIndex--" :disabled="isSubmitting">
-                  <!-- Deshabilitar si está cargando -->
-                  ← Volver
-                </Button>
+                <Button variant="outline" size="sm" class="flex-1" @click="prevStep" :disabled="isSubmitting">←
+                  Volver</Button>
                 <Button size="sm" class="flex-1" @click="submitInvoice" :disabled="isSubmitting">
-                  <!-- Deshabilitar si está cargando -->
-
-                  <!-- Mostrar un spinner si está cargando -->
                   <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -514,8 +496,6 @@ const nextStep = () => { if (currentStepIndex.value < steps.value.length - 1) { 
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                     </path>
                   </svg>
-
-                  <!-- Texto del botón -->
                   <span v-if="isSubmitting">Procesando...</span>
                   <span v-else>Confirmar Carga</span>
                 </Button>
