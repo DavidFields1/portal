@@ -382,7 +382,7 @@ const getFiltersButtonVariant = () => {
                   <template v-if="paginatedOrdenes.length > 0">
                     <TableRow v-for="orden in paginatedOrdenes" :key="orden.ordenCompra"
                       class="cursor-pointer transition-colors duration-150 hover:bg-gray-200"
-                      @click="$router.push({ name: 'orden-detail', params: { ordenCompra: orden.ordenCompra } })">
+                      @click="$router.push({ name: 'purchase-order-detail', params: { orden_compra: orden.ordenCompra } })">
                       <!-- Celdas con las mismas clases de alineación que sus cabeceras -->
                       <TableCell class="py-4 font-medium">{{ orden.ordenCompra }}</TableCell>
                       <TableCell class="py-4">{{ orden.proveedor }}</TableCell>

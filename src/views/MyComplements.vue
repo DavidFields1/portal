@@ -279,7 +279,9 @@ const getFiltersButtonVariant = () => {
                 </TableHeader>
                 <TableBody>
                   <template v-if="paginatedComplementos.length > 0">
-                    <TableRow v-for="c in paginatedComplementos" :key="c.uuid" class="">
+                    <TableRow v-for="c in paginatedComplementos" :key="c.uuid" class="cursor-pointer transition-colors duration-150"
+                      @click="$router.push({ name: 'complements-detail', params: { uuid: c.uuid } })"
+                      >
                       <!-- Celdas con py-4 para más altura -->
                       <TableCell class="font-mono py-3">{{ c.uuid }}</TableCell>
                       <TableCell class="py-4">{{ c.emisor }}</TableCell>

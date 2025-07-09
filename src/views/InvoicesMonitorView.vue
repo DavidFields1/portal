@@ -393,7 +393,9 @@ watch(prorationType, (newType) => {
       <Card>
         <CardHeader>
           <CardTitle class="text-2xl">
-            Factura: {{ selectedInvoice.folio }}
+            Factura: <span class="text-primary">
+              {{ selectedInvoice.folio }}
+            </span>
           </CardTitle>
           <CardDescription class="text-lg">
             Proveedor: {{ selectedInvoice.proveedor }}

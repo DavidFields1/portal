@@ -172,11 +172,11 @@ onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
         <div class="flex h-16 shrink-0 items-center border-b border-border"
           :class="[sidebarCollapsed && !isMobile ? 'justify-center' : 'px-4']">
           <RouterLink to="/" :class="['flex items-center', sidebarCollapsed && !isMobile ? '' : 'gap-2']">
-            <LayoutDashboard class="h-6 w-6 text-primary" />
+            <!-- <LayoutDashboard class="h-6 w-6 text-primary" /> -->
+            <img src="../assets/logo.svg" alt="Reciboo" class="h-10 w-10 mb-1" />
             <Transition enter-active-class="transition-opacity duration-200"
               leave-active-class="transition-opacity duration-200" enter-from-class="opacity-0"
-              leave-to-class="opacity-0"> <span v-if="!sidebarCollapsed || isMobile" class="font-semibold">Portal
-                Admin</span> </Transition>
+              leave-to-class="opacity-0"> <span v-if="!sidebarCollapsed || isMobile" class="font-semibold">RECIBOO</span> </Transition>
           </RouterLink>
         </div>
 

@@ -66,6 +66,11 @@ const router = createRouter({
 					component: () => import('@/views/MyComplements.vue'), // Lazy load, fixed path
 				},
 				{
+					path: 'complements/:uuid', // Nueva ruta
+					name: 'complements-detail',
+					component: () => import('@/views/MyComplementsDetailView.vue'), // Lazy load, fixed path
+				},
+				{
 					path: 'http-logs', // Nueva ruta
 					name: 'http-logs',
 					component: () => import('@/views/HttpLogView.vue'), // Carga lazy
@@ -86,7 +91,7 @@ const router = createRouter({
 					component: () => import('@/views/PurchaseOrderView.vue'), // Carga lazy
 				},
 				{
-					path: 'purchase-order/:id', // Nueva ruta
+					path: 'purchase-order/:orden_compra', // Nueva ruta
 					name: 'purchase-order-detail',
 					component: () => import('@/views/PurchaseOrderDetailView.vue'), // Carga lazy
 				},
