@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +29,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useLayoutStore } from "@/stores/layout";
+import InvoiceUploadStepper from "@/components/layout/InvoiceUploadStepper.vue";
 
 // --- Estructuras de Datos Enriquecidas ---
 interface GoodsReceipt {
@@ -234,6 +236,32 @@ watch(selectedSupplierId, (newVal) => {
   if (!newVal) {
     resetSupplierSelection();
   }
+});
+
+const stepperProps = computed(() => ({
+  steps: steps.value,
+  currentStepIndex: currentStepIndex.value,
+  selectedGRs: selectedGRs.value,
+  totalSelectedAmount: totalSelectedAmount.value,
+  currentSupplierName: currentSupplierName.value,
+  selectedFile: selectedFile.value,
+  isSubmitting: isSubmitting.value,
+  formatCurrency: formatCurrency,
+}));
+
+const layoutStore = useLayoutStore();
+// Cuando el componente se monta, mostramos la barra lateral.
+onMounted(() => {
+  layoutStore.showRightSidebar(InvoiceUploadStepper, stepperProps.value);
+});
+
+// Cuando el componente se destruye, la ocultamos. ¡MUY IMPORTANTE!
+onUnmounted(() => {
+  layoutStore.hideRightSidebar();
+});
+
+watch(stepperProps, (newProps) => {
+  layoutStore.updateRightSidebarProps(newProps);
 });
 </script>
 

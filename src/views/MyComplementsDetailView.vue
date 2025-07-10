@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Wallet,
+  ChevronDown,
+  FileCode,
 } from "lucide-vue-next";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +32,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
+import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
+import DropdownMenuContent from "@/components/ui/dropdown-menu/DropdownMenuContent.vue";
+import DropdownMenuItem from "@/components/ui/dropdown-menu/DropdownMenuItem.vue";
 
 // Obtener el router para la navegación
 const router = useRouter();
@@ -42,6 +48,7 @@ const isLoading = ref(true);
 // Datos del complemento de pago
 const complemento = ref({
   uuid: "F1E2D3C4-B5A6-7890-1234-ABCDEF012345",
+  num: "345",
   fechaEmision: "2024-07-15T14:30:00Z",
   fechaTimbrado: "2024-07-15T14:32:10Z",
   estatus: "VIGENTE",
@@ -91,12 +98,6 @@ const goBack = () => {
   router.push({ name: "complements" });
 };
 
-const downloadComplemento = () => {
-  // Lógica para descargar el XML/PDF del complemento
-  console.log(`Descargando complemento: ${complemento.value.uuid}`);
-  alert(`Iniciando descarga del complemento ${complemento.value.uuid}`);
-};
-
 const formatDate = (dateString: string) => {
   try {
     return new Intl.DateTimeFormat("es-ES", {
@@ -141,45 +142,59 @@ onMounted(() => {
     isLoading.value = false;
   }, 500);
 });
+
+// Función para descargar la factura
+const downloadPDF = () => {
+  console.log(`Descargando Complemento`);
+  alert(`Iniciando descarga del PDF para el Complemento`);
+};
+
+const downloadXML = () => {
+  console.log(`Descargando XML del Complemento`);
+  alert(`Iniciando descarga del XML para el Complemento`);
+};
 </script>
 
 <template>
   <div class="container mx-auto py-6 md:py-10">
     <!-- Fila de botones de acción -->
     <div class="flex justify-between items-center mb-6">
-      <Button
-        variant="outline"
-        class="flex items-center gap-2 cursor-pointer"
-        @click="goBack"
-      >
+      <Button variant="outline" class="flex items-center gap-2 cursor-pointer" @click="goBack">
         <ArrowLeft class="h-4 w-4" />
         Regresar
       </Button>
-      <Button @click="downloadComplemento">
-        <Download class="h-4 w-4 mr-2" />
-        Descargar Complemento
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button>
+            <Download class="mr-2 h-4 w-4" />
+            Descargar
+            <ChevronDown class="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem @click="downloadPDF" class="cursor-pointer">
+            <FileText class="mr-2 h-4 w-4 text-red-600" />
+            <span>Descargar PDF</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="downloadXML" class="cursor-pointer">
+            <FileCode class="mr-2 h-4 w-4 text-blue-600" />
+            <span>Descargar XML</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <div class="space-y-6">
       <!-- Sección 1: Encabezado y datos principales (Diseño actualizado) -->
       <Card class="overflow-hidden">
         <CardHeader>
-          <div
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-          >
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle class="text-2xl">
               Complemento de Pago:
-              <span class="text-primary font-mono">{{ complemento.uuid }}</span>
+              <span class="text-primary font-mono">{{ complemento.num }}</span>
             </CardTitle>
-            <Badge
-              :variant="getStatusBadgeVariant(complemento.estatus)"
-              class="text-base capitalize"
-            >
-              <component
-                :is="getStatusIcon(complemento.estatus)"
-                class="h-4 w-4 mr-1"
-              />
+            <Badge :variant="getStatusBadgeVariant(complemento.estatus)" class="text-base capitalize">
+              <component :is="getStatusIcon(complemento.estatus)" class="h-4 w-4 mr-1" />
               {{ complemento.estatus }}
             </Badge>
           </div>
@@ -187,9 +202,7 @@ onMounted(() => {
         <CardContent class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col gap-2">
-              <h4
-                class="font-semibold flex items-center gap-2 text-muted-foreground"
-              >
+              <h4 class="font-semibold flex items-center gap-2 text-muted-foreground">
                 <User class="h-5 w-5" /> Receptor
               </h4>
               <p class="text-lg font-medium">
@@ -200,9 +213,7 @@ onMounted(() => {
               </p>
             </div>
             <div class="flex flex-col gap-2">
-              <h4
-                class="font-semibold flex items-center gap-2 text-muted-foreground"
-              >
+              <h4 class="font-semibold flex items-center gap-2 text-muted-foreground">
                 <Building class="h-5 w-5" /> Emisor
               </h4>
               <p class="text-lg font-medium">{{ complemento.emisorNombre }}</p>
@@ -216,9 +227,7 @@ onMounted(() => {
             <h4 class="text-sm font-semibold text-muted-foreground">
               IMPORTE TOTAL PAGADO
             </h4>
-            <p
-              class="text-4xl font-bold tracking-tight flex items-center gap-2"
-            >
+            <p class="text-4xl font-bold tracking-tight flex items-center gap-2">
               <CircleDollarSign class="h-8 w-8 text-primary" />
               {{ formatCurrency(pago.monto, pago.moneda) }}
             </p>
@@ -240,7 +249,7 @@ onMounted(() => {
               <span class="text-muted-foreground flex items-center gap-2">
                 <FileText class="h-4 w-4" /> UUID
               </span>
-              <span class="font-mono text-sm">{{ complemento.uuid }}</span>
+              <span class="font-mono text-md font-bold">{{ complemento.uuid }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted-foreground flex items-center gap-2">
@@ -248,7 +257,7 @@ onMounted(() => {
               </span>
               <span class="font-semibold">{{
                 formatDate(complemento.fechaEmision)
-              }}</span>
+                }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted-foreground flex items-center gap-2">
@@ -256,13 +265,7 @@ onMounted(() => {
               </span>
               <span class="font-semibold">{{
                 formatDate(complemento.fechaTimbrado)
-              }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-muted-foreground flex items-center gap-2">
-                <CheckCircle2 class="h-4 w-4" /> Estatus
-              </span>
-              <span class="font-semibold">{{ complemento.estatus }}</span>
+                }}</span>
             </div>
           </CardContent>
         </Card>
@@ -282,7 +285,7 @@ onMounted(() => {
               </span>
               <span class="font-mono font-semibold text-base">{{
                 formatCurrency(pago.monto, pago.moneda)
-              }}</span>
+                }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted-foreground flex items-center gap-2">
@@ -330,30 +333,24 @@ onMounted(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow
-                  v-for="doc in documentosRelacionados"
-                  :key="doc.uuidFactura"
-                  class="hover:bg-muted/20"
-                >
+                <TableRow v-for="doc in documentosRelacionados" :key="doc.uuidFactura" class="hover:bg-muted/20">
                   <TableCell class="font-mono text-xs">{{
                     doc.uuidFactura
-                  }}</TableCell>
+                    }}</TableCell>
                   <TableCell class="text-center font-mono text-xs">{{
                     doc.serie
-                  }}</TableCell>
+                    }}</TableCell>
                   <TableCell class="text-center font-mono text-xs">{{
                     doc.folio
-                  }}</TableCell>
+                    }}</TableCell>
                   <TableCell class="text-center">{{ doc.moneda }}</TableCell>
                   <TableCell class="text-center">{{
                     doc.numParcialidad
-                  }}</TableCell>
+                    }}</TableCell>
                   <TableCell class="text-right font-mono">
                     {{ formatCurrency(doc.impSaldoAnt, doc.moneda) }}
                   </TableCell>
-                  <TableCell
-                    class="text-right font-mono font-medium text-primary"
-                  >
+                  <TableCell class="text-right font-mono font-medium text-primary">
                     {{ formatCurrency(doc.impPagado, doc.moneda) }}
                   </TableCell>
                   <TableCell class="text-right font-mono">

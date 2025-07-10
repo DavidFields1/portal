@@ -12,7 +12,9 @@ import {
   FileText,
   Fingerprint,
   User,
-  Download, // Nuevo icono para descargar
+  Download,
+  ChevronDown,
+  FileCode, // Nuevo icono para descargar
 } from "lucide-vue-next";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
+import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
+import DropdownMenuContent from "@/components/ui/dropdown-menu/DropdownMenuContent.vue";
+import DropdownMenuItem from "@/components/ui/dropdown-menu/DropdownMenuItem.vue";
 
 // Simulación: obtén el uuid de la ruta
 const route = useRoute();
@@ -95,13 +101,14 @@ const formatCurrency = (amount: number, currency: string) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount);
 
 // Función para descargar la factura
-const downloadFactura = () => {
-  // Aquí iría la lógica real para descargar la factura
-  console.log(`Descargando factura ${factura.value.numeroFactura}...`);
-  // Simulación de descarga
-  setTimeout(() => {
-    alert(`Factura ${factura.value.numeroFactura} descargada correctamente.`);
-  }, 1000);
+const downloadPDF = () => {
+  console.log(`Descargando Factura`);
+  alert(`Iniciando descarga del PDF para la Factura`);
+};
+
+const downloadXML = () => {
+  console.log(`Descargando XML de la Factura`);
+  alert(`Iniciando descarga del XML para la Factura`);
 };
 </script>
 
@@ -112,10 +119,25 @@ const downloadFactura = () => {
         <ArrowLeft class="h-4 w-4" />
         Regresar
       </Button>
-      <Button variant="default" class="bg-purple-400 hover:bg-purple-600 text-white" @click="downloadFactura">
-        <Download class="h-4 w-4 mr-2" />
-        Descargar Factura
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button>
+            <Download class="mr-2 h-4 w-4" />
+            Descargar
+            <ChevronDown class="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem @click="downloadPDF" class="cursor-pointer">
+            <FileText class="mr-2 h-4 w-4 text-red-600" />
+            <span>Descargar PDF</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="downloadXML" class="cursor-pointer">
+            <FileCode class="mr-2 h-4 w-4 text-blue-600" />
+            <span>Descargar XML</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <!-- Sección 1: Encabezado y datos principales -->

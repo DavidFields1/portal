@@ -5,6 +5,9 @@ import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
+import InvoiceUploadLayout from '@/layouts/InvoiceUploadLayout.vue'
+import POInvoiceUploadAltView from '@/views/POInvoiceUploadAltView.vue'
+import NoPOInvoiceUploadAltView from '@/views/NoPOInvoiceUploadAltView.vue'
 // Podrías añadir una vista para 'NotFound' si quieres
 // import NotFoundView from '../views/NotFoundView.vue';
 
@@ -102,6 +105,22 @@ const router = createRouter({
 				//   name: 'users',
 				//   component: () => import('../views/UsersView.vue') // Lazy loading
 				// },
+			],
+		},
+		{
+			path: '/invoice',
+			component: InvoiceUploadLayout,
+			children: [
+				{
+					path: 'upload',
+					name: 'alt-invoice-upload',
+					component: POInvoiceUploadAltView,
+				},
+				{
+					path: 'upload-no-po',
+					name: 'alt-invoice-upload-no-po',
+					component: NoPOInvoiceUploadAltView,
+				},
 			],
 		},
 		// Rutas públicas (Login, Register)

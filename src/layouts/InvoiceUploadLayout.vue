@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterView, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useLayoutStore } from '@/stores/layout' // <-- 1. Importar el store del layout
 
 import {
   LayoutDashboard,
@@ -24,7 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +33,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-
 import { Button } from '@/components/ui/button'
-// import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -46,13 +44,14 @@ const sidebarCollapsed = ref(false)
 const isMobile = ref(false)
 const openNavItems = ref<string[]>([])
 const hoveredNavItem = ref<string | null>(null)
-const hoverTimeout = ref<number | null>(null) // Estado para el temporizador
+const hoverTimeout = ref<number | null>(null)
 
-// --- Integración con el Auth Store ---
+// --- Integración con Stores ---
 const authStore = useAuthStore()
+const layoutStore = useLayoutStore() // <-- 2. Instanciar el store
 const user = computed(() => authStore.user)
 
-// --- Datos de Navegación ---
+// --- Datos de Navegación (sin cambios) ---
 const navMain = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, },
   {
@@ -63,6 +62,8 @@ const navMain = [
     title: "Facturación", icon: CreditCard, items: [
       { title: "Mis Facturas", url: "/invoices" },
       { title: "Monitor de Facturas", url: "/invoices-monitor" },
+      // { title: "Carga de Factura con OC", url: "/invoice-upload" },
+      // { title: "Carga de Factura sin OC", url: "/invoice-upload-no-po" },
       { title: "Carga de Factura con OC", url: "/invoice/upload" },
       { title: "Carga de Factura sin OC", url: "/invoice-upload-no-po" },
       { title: "[ALT] Carga de Factura con OC", url: "/invoice/upload" },
@@ -80,7 +81,7 @@ const navMain = [
   { title: "Configuración", url: "/settings", icon: Settings2, },
 ]
 
-// --- NUEVO: Estado para Notificaciones ---
+// --- Notificaciones e Idioma (sin cambios) ---
 const notifications = ref([
   {
     id: 1,
@@ -104,36 +105,15 @@ const notifications = ref([
     read: true,
   },
 ])
-const unreadNotificationsCount = computed(() => {
-  return notifications.value.filter((n) => !n.read).length
-})
-const markAllAsRead = () => {
-  notifications.value.forEach((n) => (n.read = true))
-}
-const markAsRead = (id: number) => {
-  const notification = notifications.value.find(n => n.id === id)
-  if (notification) {
-    notification.read = true
-  }
-}
+const unreadNotificationsCount = computed(() => notifications.value.filter((n) => !n.read).length);
+const markAllAsRead = () => { notifications.value.forEach((n) => (n.read = true)) };
+const markAsRead = (id: number) => { const notification = notifications.value.find(n => n.id === id); if (notification) { notification.read = true } };
+const languages = [{ code: 'es', name: 'Español', flag: '🇪🇸' }, { code: 'en', name: 'English', flag: '🇺🇸' }, { code: 'fr', name: 'Français', flag: '🇫🇷' },];
+const currentLang = ref('es');
+const currentLanguage = computed(() => languages.find(lang => lang.code === currentLang.value) || languages[0]);
+const changeLanguage = (lang: string) => { currentLang.value = lang; };
 
-// --- NUEVO: Estado para Idioma ---
-const languages = [
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-]
-const currentLang = ref('es')
-const currentLanguage = computed(() => {
-  return languages.find(lang => lang.code === currentLang.value) || languages[0]
-})
-const changeLanguage = (lang: string) => {
-  currentLang.value = lang
-  // TODO: Aquí llamarías a tu librería de internacionalización
-  console.log(`Idioma cambiado a: ${lang}`)
-}
-
-// --- Métodos del Layout ---
+// --- Métodos del Layout (sin cambios) ---
 const checkMobile = () => { isMobile.value = window.innerWidth < MOBILE_BREAKPOINT; if (isMobile.value) { sidebarCollapsed.value = false } }
 const toggleSidebar = () => { if (isMobile.value) { sidebarOpen.value = !sidebarOpen.value } else { sidebarCollapsed.value = !sidebarCollapsed.value } }
 const closeSidebar = () => { if (isMobile.value) { sidebarOpen.value = false } }
@@ -141,34 +121,34 @@ const toggleNavItem = (title: string) => { if (sidebarCollapsed.value && !isMobi
 const isNavItemOpen = (title: string) => { return openNavItems.value.includes(title) && (!sidebarCollapsed.value || isMobile.value) }
 const handleLogout = () => { authStore.logout() }
 const getInitials = (name: string | undefined): string => { if (!name) return "U"; return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase(); };
+const handleMouseEnter = (title: string) => { if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; } hoveredNavItem.value = title; };
+const handleMouseLeave = () => { hoverTimeout.value = window.setTimeout(() => { hoveredNavItem.value = null; }, 100); };
 
-// --- Métodos para Hover Intent ---
-const handleMouseEnter = (title: string) => {
-  if (hoverTimeout.value) {
-    clearTimeout(hoverTimeout.value)
-    hoverTimeout.value = null
-  }
-  hoveredNavItem.value = title
-}
-
-const handleMouseLeave = () => {
-  hoverTimeout.value = window.setTimeout(() => {
-    hoveredNavItem.value = null
-  }, 100) // Retraso de 100ms antes de cerrar
-}
-
-// --- Clases Computadas ---
+// --- Clases Computadas (MODIFICADAS) ---
 const sidebarClasses = computed(() => { if (isMobile.value) { return ['fixed left-0 top-0 z-50 h-screen w-64 transform bg-background border-r border-border transition-transform duration-300 ease-in-out', { 'translate-x-0': sidebarOpen.value, '-translate-x-full': !sidebarOpen.value, }] } else { return ['fixed left-0 top-0 z-40 h-screen bg-background border-r border-border transition-all duration-300 ease-in-out', { 'w-64': !sidebarCollapsed.value, 'w-20': sidebarCollapsed.value, }] } })
-const mainContentClasses = computed(() => { if (isMobile.value) { return 'flex flex-1 flex-col' } else { return ['flex flex-1 flex-col transition-all duration-300 ease-in-out', { 'ml-64': !sidebarCollapsed.value, 'ml-20': sidebarCollapsed.value, }] } })
 
-// --- Hooks de Ciclo de Vida ---
+// 3. Modificar las clases del contenido principal para que deje espacio a la derecha
+const mainContentClasses = computed(() => {
+  const classes = ['flex flex-1 flex-col transition-all duration-300 ease-in-out'];
+  if (isMobile.value) {
+    return 'flex flex-1 flex-col'
+  }
+  classes.push(!sidebarCollapsed.value ? 'ml-64' : 'ml-20');
+  // Si la barra lateral derecha está visible, añade un margen a la derecha
+  if (layoutStore.isRightSidebarVisible) {
+    classes.push('mr-80'); // Coincide con el ancho de la nueva barra (w-80)
+  }
+  return classes;
+})
+
+// --- Hooks de Ciclo de Vida (sin cambios) ---
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile); if (isMobile.value) { sidebarOpen.value = false } })
 onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
 </script>
 
 <template>
   <div class="flex h-screen bg-background overflow-hidden">
-    <!-- Sidebar -->
+    <!-- Sidebar Izquierdo (sin cambios) -->
     <aside :class="sidebarClasses">
       <div class="flex h-full flex-col">
         <div class="flex h-16 shrink-0 items-center border-b border-border"
@@ -277,7 +257,7 @@ onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
 
     <!-- Contenido Principal -->
     <div :class="mainContentClasses">
-      <!-- Header con botones de notificaciones e idioma -->
+      <!-- Header (sin cambios) -->
       <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 bg-background">
         <button @click="toggleSidebar" class="rounded-lg p-2 hover:bg-muted">
           <PanelLeft class="h-5 w-5" />
@@ -375,7 +355,14 @@ onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
       </main>
     </div>
 
-    <!-- Overlay para sidebar móvil -->
+    <!-- 4. AÑADIR: Sidebar Derecho -->
+    <aside v-if="layoutStore.isRightSidebarVisible"
+      class="fixed top-0 right-0 z-30 h-screen w-80 bg-background border-l border-border">
+      <!-- Este componente renderizará lo que la vista le diga al store -->
+      <component :is="layoutStore.rightSidebarComponent" v-bind="layoutStore.rightSidebarProps" />
+    </aside>
+
+    <!-- Overlay para sidebar móvil (sin cambios) -->
     <div v-if="sidebarOpen && isMobile" @click="closeSidebar"
       class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"></div>
     <Toaster richColors position="top-right" />
