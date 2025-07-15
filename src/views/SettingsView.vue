@@ -9,6 +9,7 @@ import {
   // Iconos adicionales para la sección de Cuenta
   Building, Mail, IdCard, Globe, Phone,
   GitCompareArrows,
+  PencilIcon,
 } from "lucide-vue-next";
 import {
   DropdownMenu,
@@ -109,6 +110,11 @@ const formatDate = (date: string) =>
 
     <!-- Sección Cuenta -->
     <div v-if="selectedSection === 'cuenta'">
+      <div class="flex justify-end mb-4">
+        <Button>
+          <PencilIcon class="mr-2 h-4 w-4" /> Editar
+        </Button>
+      </div>
       <Card class="transition-shadow hover:shadow-lg">
         <CardHeader>
           <div class="flex items-center gap-3">
@@ -266,7 +272,7 @@ const formatDate = (date: string) =>
           <CardFooter class="text-xs justify-end text-muted-foreground flex items-center gap-2 pt-2">
             <Calendar class="h-4 w-4" />
             <span>Creado: {{ formatDate(desv.fechaCreacion) }} | Modificado: {{ formatDate(desv.fechaModificacion)
-            }}</span>
+              }}</span>
           </CardFooter>
         </Card>
       </div>
