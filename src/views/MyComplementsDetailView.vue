@@ -223,7 +223,7 @@ const downloadXML = () => {
             </div>
           </div>
           <Separator />
-          <div class="flex items-center justify-center flex-col gap-2 pt-2">
+          <div class="flex items-end-safe justify-center flex-col gap-2 pt-2">
             <h4 class="text-sm font-semibold text-muted-foreground">
               IMPORTE TOTAL PAGADO
             </h4>
@@ -257,7 +257,7 @@ const downloadXML = () => {
               </span>
               <span class="font-semibold">{{
                 formatDate(complemento.fechaEmision)
-                }}</span>
+              }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted-foreground flex items-center gap-2">
@@ -265,7 +265,7 @@ const downloadXML = () => {
               </span>
               <span class="font-semibold">{{
                 formatDate(complemento.fechaTimbrado)
-                }}</span>
+              }}</span>
             </div>
           </CardContent>
         </Card>
@@ -285,7 +285,7 @@ const downloadXML = () => {
               </span>
               <span class="font-mono font-semibold text-base">{{
                 formatCurrency(pago.monto, pago.moneda)
-                }}</span>
+              }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted-foreground flex items-center gap-2">
@@ -336,17 +336,17 @@ const downloadXML = () => {
                 <TableRow v-for="doc in documentosRelacionados" :key="doc.uuidFactura" class="hover:bg-muted/20">
                   <TableCell class="font-mono text-xs">{{
                     doc.uuidFactura
-                    }}</TableCell>
+                  }}</TableCell>
                   <TableCell class="text-center font-mono text-xs">{{
                     doc.serie
-                    }}</TableCell>
+                  }}</TableCell>
                   <TableCell class="text-center font-mono text-xs">{{
                     doc.folio
-                    }}</TableCell>
+                  }}</TableCell>
                   <TableCell class="text-center">{{ doc.moneda }}</TableCell>
                   <TableCell class="text-center">{{
                     doc.numParcialidad
-                    }}</TableCell>
+                  }}</TableCell>
                   <TableCell class="text-right font-mono">
                     {{ formatCurrency(doc.impSaldoAnt, doc.moneda) }}
                   </TableCell>

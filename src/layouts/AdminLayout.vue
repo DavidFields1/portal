@@ -63,10 +63,8 @@ const navMain = [
     title: "Facturación", icon: CreditCard, items: [
       { title: "Mis Facturas", url: "/invoices" },
       { title: "Monitor de Facturas", url: "/invoices-monitor" },
-      { title: "Carga de Factura con OC", url: "/invoice/upload" },
+      { title: "Carga de Factura con OC", url: "/invoice-upload" },
       { title: "Carga de Factura sin OC", url: "/invoice-upload-no-po" },
-      { title: "[ALT] Carga de Factura con OC", url: "/invoice/upload" },
-      { title: "[ALT] Carga de Factura sin OC", url: "/invoice/upload-no-po" },
     ],
   },
   {

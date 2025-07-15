@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, type FunctionalComponent } from "vue";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "vue-sonner";
 import {
-  UploadCloud, CheckCircle, FileText, Users, X, ChevronsUpDown, Check
+  UploadCloud, CheckCircle, FileText, Users, X, ChevronsUpDown, Check,
+  ClipboardList,
+  FileCode
 } from "lucide-vue-next";
 import {
   Popover,
@@ -31,6 +33,13 @@ import {
 } from "@/components/ui/command";
 import { useLayoutStore } from "@/stores/layout";
 import InvoiceUploadStepper from "@/components/layout/InvoiceUploadStepper.vue";
+// import Label from "@/components/ui/label/Label.vue";
+import Input from "@/components/ui/input/Input.vue";
+import Select from "@/components/ui/select/Select.vue";
+import SelectTrigger from "@/components/ui/select/SelectTrigger.vue";
+import SelectValue from "@/components/ui/select/SelectValue.vue";
+import SelectContent from "@/components/ui/select/SelectContent.vue";
+import SelectItem from "@/components/ui/select/SelectItem.vue";
 
 // --- Estructuras de Datos Enriquecidas ---
 interface GoodsReceipt {
@@ -103,11 +112,19 @@ const purchaseOrders = ref<PurchaseOrder[]>([
   },
 ]);
 
+
+export interface Step {
+  id: string;
+  name: string;
+  icon: FunctionalComponent<unknown>;
+}
+
 // --- Estado del Stepper ---
 const steps = ref([
   { id: "select_supplier", name: "Seleccionar Proveedor", icon: Users },
   { id: "select_gr", name: "Seleccionar Entradas", icon: CheckCircle },
   { id: "upload_invoice", name: "Subir Factura", icon: UploadCloud },
+  { id: "invoice_data", name: "Datos de Factura", icon: ClipboardList },
   { id: "confirm", name: "Confirmar", icon: FileText },
 ]);
 const currentStepIndex = ref(0);
@@ -120,7 +137,8 @@ const selectedGRs = ref<GoodsReceipt[]>([]);
 const currentSupplierName = ref<string | null>(null);
 
 // --- Variables para subida de archivos ---
-const selectedFile = ref<File | null>(null);
+const selectedPdfFile = ref<File | null>(null);
+const selectedXmlFile = ref<File | null>(null);
 
 // --- Lógica Computada ---
 const allSuppliers = computed(() => {
@@ -181,7 +199,9 @@ const removeSelectedGR = (grId: string) => {
   }
 };
 
-const handleFileUpload = (event: Event) => {
+
+
+const handlePdfUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
@@ -194,14 +214,36 @@ const handleFileUpload = (event: Event) => {
       toast.error('Tipo de archivo no válido', { description: 'Solo se permiten archivos PDF, JPG o PNG' });
       return;
     }
-    selectedFile.value = file;
+    selectedPdfFile.value = file;
     toast.success('Archivo cargado correctamente', { description: `${file.name} está listo para procesar` });
   }
 };
+const handleXmlUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('El archivo es demasiado grande', { description: 'Por favor selecciona un archivo menor a 10MB' });
+      return;
+    }
+    const allowedTypes = ['text/xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Tipo de archivo no válido', { description: 'Solo se permiten archivos XML' });
+      return;
+    }
+    selectedXmlFile.value = file;
+    toast.success('XML cargado correctamente', { description: `${file.name} está listo para procesar` });
+  }
+};
 
-const removeFile = () => {
-  selectedFile.value = null;
-  const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+const removePdfFile = () => {
+  selectedPdfFile.value = null;
+  const fileInput = document.getElementById('invoice-upload-pdf') as HTMLInputElement;
+  if (fileInput) fileInput.value = '';
+};
+const removeXmlFile = () => {
+  selectedXmlFile.value = null;
+  const fileInput = document.getElementById('invoice-upload-xml') as HTMLInputElement;
   if (fileInput) fileInput.value = '';
 };
 
@@ -219,7 +261,8 @@ const submitInvoice = async () => {
     await fakeApiService();
     toast.success('Factura cargada exitosamente', { description: `Se procesaron ${selectedGRs.value.length} entradas de mercancía.` });
     resetSupplierSelection();
-    selectedFile.value = null;
+    selectedPdfFile.value = null;
+    selectedXmlFile.value = null;
   } catch (error) {
     console.log(error)
     toast.error('Error al cargar la factura', { description: 'Por favor, inténtalo de nuevo más tarde.' });
@@ -244,7 +287,8 @@ const stepperProps = computed(() => ({
   selectedGRs: selectedGRs.value,
   totalSelectedAmount: totalSelectedAmount.value,
   currentSupplierName: currentSupplierName.value,
-  selectedFile: selectedFile.value,
+  selectedPdfFile: selectedPdfFile.value,
+  selectedXmlFile: selectedXmlFile.value,
   isSubmitting: isSubmitting.value,
   formatCurrency: formatCurrency,
 }));
@@ -262,6 +306,13 @@ onUnmounted(() => {
 
 watch(stepperProps, (newProps) => {
   layoutStore.updateRightSidebarProps(newProps);
+});
+
+const invoiceData = ref({
+  folio: "",
+  moneda: "MXN", // Valor por defecto
+  importe: 0,
+  sociedad: "",
 });
 </script>
 
@@ -470,52 +521,130 @@ watch(stepperProps, (newProps) => {
               </div>
               <div
                 class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
-                <input type="file" id="invoice-upload" accept=".pdf,.jpg,.jpeg,.png" class="sr-only"
-                  @change="handleFileUpload" />
-                <label for="invoice-upload" class="cursor-pointer">
-                  <UploadCloud class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                  <p class="text-sm font-medium mb-1">Haz clic para subir la factura</p>
-                  <p class="text-xs text-muted-foreground">PDF, JPG, PNG hasta 10MB</p>
+                <input type="file" id="invoice-upload-pdf" accept=".pdf" class="sr-only" @change="handlePdfUpload" />
+                <label for="invoice-upload-pdf" class="cursor-pointer">
+                  <FileText class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                  <p class="text-sm font-medium mb-1">Haz clic para subir la factura (PDF)</p>
+                  <p class="text-xs text-muted-foreground">PDF hasta 10MB</p>
                 </label>
               </div>
-              <div v-if="selectedFile" class="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div
+                class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
+                <input type="file" id="invoice-upload-xml" accept=".xml" class="sr-only" @change="handleXmlUpload" />
+                <label for="invoice-upload-xml" class="cursor-pointer">
+                  <FileCode class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                  <p class="text-sm font-medium mb-1">Haz clic para subir la factura (XML)</p>
+                  <p class="text-xs text-muted-foreground">XML hasta 10MB</p>
+                </label>
+              </div>
+              <div v-if="selectedPdfFile" class="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div class="flex items-center space-x-2">
                   <FileText class="h-4 w-4 text-muted-foreground" />
-                  <span class="text-sm font-medium">{{ selectedFile.name }}</span>
-                  <Badge variant="secondary" class="text-xs">{{ (selectedFile.size / 1024 / 1024).toFixed(1) }} MB
+                  <span class="text-sm font-medium">{{ selectedPdfFile.name }}</span>
+                  <Badge variant="secondary" class="text-xs">{{ (selectedPdfFile.size / 1024 / 1024).toFixed(1) }} MB
                   </Badge>
                 </div>
-                <Button variant="ghost" size="sm" @click="removeFile">✕</Button>
+                <Button variant="ghost" size="sm" @click="removePdfFile">✕</Button>
+              </div>
+              <div v-if="selectedXmlFile" class="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div class="flex items-center space-x-2">
+                  <FileText class="h-4 w-4 text-muted-foreground" />
+                  <span class="text-sm font-medium">{{ selectedXmlFile.name }}</span>
+                  <Badge variant="secondary" class="text-xs">{{ (selectedXmlFile.size / 1024 / 1024).toFixed(1) }} MB
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="sm" @click="removeXmlFile">✕</Button>
               </div>
               <div class="flex space-x-2 pt-4">
                 <Button variant="outline" size="sm" class="flex-1" @click="prevStep">← Volver</Button>
-                <Button size="sm" class="flex-1" :disabled="!selectedFile" @click="nextStep">Continuar →</Button>
+                <Button size="sm" class="flex-1" :disabled="!selectedPdfFile || !selectedXmlFile"
+                  @click="nextStep">Continuar
+                  →</Button>
               </div>
             </div>
-            <!-- Paso 3: Confirmar -->
+            <!-- Paso 3: Datos de Factura -->
             <div v-if="currentStepIndex === 3" class="space-y-4">
+              <h4 class="font-semibold">Datos de Factura</h4>
+              <div class="space-y-3">
+                <div class="space-y-1">
+                  <Label for="folio">Folio</Label>
+                  <Input id="folio" type="text" v-model="invoiceData.folio" placeholder="Ej: F-12345" />
+                </div>
+                <div class="space-y-1">
+                  <Label for="moneda">Moneda</Label>
+                  <Select v-model="invoiceData.moneda">
+                    <SelectTrigger id="moneda">
+                      <SelectValue placeholder="Selecciona una moneda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
+                      <SelectItem value="USD">USD - Dólar Americano</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="space-y-1">
+                  <Label for="importe">Importe Total</Label>
+                  <Input id="importe" type="number" v-model="invoiceData.importe" placeholder="Ej: 1160.00" />
+                </div>
+                <div class="space-y-1">
+                  <Label for="sociedad">Sociedad</Label>
+                  <Input id="sociedad" v-model="invoiceData.sociedad" placeholder="Ej: 1000" />
+                </div>
+              </div>
+              <div class="flex space-x-2 pt-4">
+                <Button variant="outline" size="sm" class="flex-1" @click="prevStep">← Volver</Button>
+                <Button size="sm" class="flex-1" :disabled="!invoiceData.folio || !invoiceData.importe"
+                  @click="nextStep">Continuar →</Button>
+              </div>
+            </div>
+            <!-- Paso 4: Confirmar -->
+            <div v-if="currentStepIndex === 4" class="space-y-4">
               <h4 class="font-semibold">Confirmación Final</h4>
               <div class="space-y-3 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Entradas:</span>
-                  <span class="font-medium">{{ selectedGRs.length }}</span>
-                </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Proveedor:</span>
                   <span class="font-medium">{{ currentSupplierName }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-muted-foreground">Total:</span>
-                  <span class="font-semibold">{{ formatCurrency(totalSelectedAmount) }}</span>
+                  <span class="text-muted-foreground">Entradas:</span>
+                  <span class="font-medium">{{ selectedGRs.length }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-muted-foreground">Archivo:</span>
-                  <span class="font-medium">{{ selectedFile?.name }}</span>
+                  <span class="text-muted-foreground">Total Seleccionado:</span>
+                  <span class="font-semibold">{{ formatCurrency(totalSelectedAmount) }}</span>
+                </div>
+                <Separator />
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Archivo PDF:</span>
+                  <span class="font-medium">{{ selectedPdfFile?.name }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Archivo XML:</span>
+                  <span class="font-medium">{{ selectedXmlFile?.name }}</span>
+                </div>
+                <Separator />
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Folio:</span>
+                  <span class="font-medium">{{ invoiceData.folio }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Moneda:</span>
+                  <span class="font-medium">{{ invoiceData.moneda }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Importe:</span>
+                  <span class="font-semibold">{{ formatCurrency(invoiceData.importe || 0) }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Sociedad:</span>
+                  <span class="font-medium">{{ invoiceData.sociedad }}</span>
                 </div>
               </div>
               <div class="flex space-x-2 pt-4">
-                <Button variant="outline" size="sm" class="flex-1" @click="prevStep" :disabled="isSubmitting">←
-                  Volver</Button>
+                <Button variant="outline" size="sm" class="flex-1" @click="prevStep" :disabled="isSubmitting">
+                  ← Volver
+                </Button>
                 <Button size="sm" class="flex-1" @click="submitInvoice" :disabled="isSubmitting">
                   <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -5,9 +5,6 @@ import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
-import InvoiceUploadLayout from '@/layouts/InvoiceUploadLayout.vue'
-import POInvoiceUploadAltView from '@/views/POInvoiceUploadAltView.vue'
-import NoPOInvoiceUploadAltView from '@/views/NoPOInvoiceUploadAltView.vue'
 // Podrías añadir una vista para 'NotFound' si quieres
 // import NotFoundView from '../views/NotFoundView.vue';
 
@@ -26,27 +23,20 @@ const router = createRouter({
 					component: DashboardView,
 				},
 				{
-					path: 'users', // Ruta para usuarios
-					name: 'users',
-					// Usa lazy loading para cargar la vista de usuarios
-					component: () => import('@/views/UsersView.vue'), // <--- ACTUALIZADO
-				},
-				{
-					path: 'settings', // Ruta para configuración
-					name: 'settings',
-					// Usa lazy loading para cargar la vista de configuración
-					component: () => import('@/views/SettingsView.vue'), // <--- ACTUALIZADO
-				},
-				{
 					path: 'invoices', // Nueva ruta
 					name: 'invoices',
 					component: () => import('@/views/MyInvoices.vue'), // Carga lazy
 				},
-				{
-					path: 'invoices-monitor', // Nueva ruta
-					name: 'invoices-monitor',
-					component: () => import('@/views/InvoicesMonitorView.vue'), // Carga lazy
-				},
+				// {
+				// 	path: 'invoices-monitor', // Nueva ruta
+				// 	name: 'invoices-monitor',
+				// 	component: () => import('@/views/InvoicesMonitorView.vue'), // Carga lazy
+				// },
+				// {
+				// 	path: 'invoices-monitor/:uuid', // Nueva ruta
+				// 	name: 'invoice-monitor-detail',
+				// 	component: () => import('@/views/InvoiceMonitorDetailView.vue'), // Carga lazy
+				// },
 				{
 					path: '/invoices/:uuid',
 					name: 'invoice-detail',
@@ -107,23 +97,72 @@ const router = createRouter({
 				// },
 			],
 		},
+		// Rutas públicas (Login, Register)
 		{
-			path: '/invoice',
-			component: InvoiceUploadLayout,
+			path: '/users',
+			name: 'users',
+			component: AdminLayout,
+			meta: { requiresAuth: true },
 			children: [
 				{
-					path: 'upload',
-					name: 'alt-invoice-upload',
-					component: POInvoiceUploadAltView,
+					path: '',
+					name: 'users-list',
+					component: () => import('../views/UsersView.vue'),
 				},
 				{
-					path: 'upload-no-po',
-					name: 'alt-invoice-upload-no-po',
-					component: NoPOInvoiceUploadAltView,
+					path: 'new',
+					name: 'users-new',
+					component: () => import('../views/NewUserView.vue'),
+				},
+				{
+					path: 'new-supplier',
+					name: 'supplier-new',
+					component: () => import('../views/NewSupplierView.vue'),
 				},
 			],
 		},
-		// Rutas públicas (Login, Register)
+		{
+			path: '/invoices-monitor',
+			name: 'invoices-monitor',
+			component: AdminLayout,
+			meta: { requiresAuth: true },
+			children: [
+				{
+					path: '',
+					name: 'invoices-list',
+					component: () => import('../views/InvoicesMonitorView.vue'),
+				},
+				{
+					path: ':uuid',
+					name: 'invoice-monitor-detail',
+					component: () => import('../views/InvoiceMonitorDetailView.vue'),
+				},
+			],
+		},
+		{
+			path: '/settings',
+			name: 'settings',
+			component: AdminLayout,
+			meta: { requiresAuth: true },
+			children: [
+				{
+					path: '',
+					name: 'settings-view',
+					component: () => import('../views/SettingsView.vue'),
+				},
+				{
+					path: '/blocks/new',
+					name: 'block-new',
+					component: () => import('../views/NewBlockView.vue'),
+				},
+				{
+					path: '/deviation/new',
+					name: 'deviation-new',
+					component: () => import('../views/NewDeviationView.vue'),
+				},
+			],
+		},
+
 		{
 			path: '/login',
 			name: 'login',

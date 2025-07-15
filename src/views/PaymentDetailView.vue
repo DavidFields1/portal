@@ -183,7 +183,7 @@ onMounted(() => {
             </div>
           </div>
           <Separator />
-          <div class="flex items-center justify-center flex-col gap-2 pt-2">
+          <div class="flex items-end-safe justify-center flex-col gap-2 pt-2">
             <h4 class="text-sm font-semibold text-muted-foreground">IMPORTE TOTAL PAGADO</h4>
             <p class="text-4xl font-bold tracking-tight flex items-center gap-2">
               <CircleDollarSign class="h-8 w-8 text-primary" />

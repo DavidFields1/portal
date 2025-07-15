@@ -9,7 +9,8 @@ import {
   ArrowUp,
   ArrowDown,
   Users as UsersIcon,
-  Filter, // NUEVO: Icono para el botón de filtros
+  Filter,
+  Truck, // NUEVO: Icono para el botón de filtros
 } from "lucide-vue-next";
 
 import { Badge } from "@/components/ui/badge";
@@ -43,16 +44,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "vue-sonner";
-// NUEVO: Imports para el Dialog
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 // --- Tipos y Datos Simulados ---
 interface User {
@@ -89,11 +80,6 @@ const sortOrder = ref<"asc" | "desc">("desc");
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
-// --- Estado para el Dialog de Crear Usuario ---
-const isCreateUserDialogOpen = ref(false);
-const newUserName = ref("");
-const newUserEmail = ref("");
-const newUserRole = ref<User["role"]>("Viewer"); // Valor por defecto
 
 // --- Lógica Computada ---
 
@@ -176,29 +162,6 @@ const setSort = (key: keyof User) => {
 const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
 
-// Acciones de CRUD
-const handleCreateUser = () => {
-  if (!newUserName.value || !newUserEmail.value) {
-    toast.error("El nombre y el email son obligatorios.");
-    return;
-  }
-  const newUser: User = {
-    id: `usr_${Date.now()}`,
-    name: newUserName.value,
-    email: newUserEmail.value,
-    role: newUserRole.value,
-    status: "Active",
-    createdAt: new Date().toISOString(),
-  };
-  allUsers.value.unshift(newUser); // Añadir al principio de la lista
-  toast.success(`Usuario "${newUser.name}" creado.`);
-  isCreateUserDialogOpen.value = false; // Cerrar dialog
-  // Resetear formulario
-  newUserName.value = "";
-  newUserEmail.value = "";
-  newUserRole.value = "Viewer";
-};
-
 const editUser = (userId: string) => {
   toast.info(`Funcionalidad 'Editar Usuario ${userId}' pendiente.`);
 };
@@ -235,6 +198,58 @@ const getFiltersButtonVariant = () => {
   if (showFilters.value) return 'default'
   else if (!showFilters.value && activeFilterCount.value == 0) return 'outline'
 }
+
+const selectedTable = ref<"providers" | "users">("users");
+
+interface Provider {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  type: "admin" | "empleado";
+  status: "Activo" | "Inactivo";
+}
+
+const allProviders = ref<Provider[]>([
+  {
+    id: "prov_1",
+    username: "jdoe",
+    name: "Juan Doe",
+    email: "juan@proveedor.com",
+    type: "admin",
+    status: "Activo",
+  },
+  {
+    id: "prov_2",
+    username: "mariae",
+    name: "María Example",
+    email: "maria@proveedor.com",
+    type: "empleado",
+    status: "Inactivo",
+  },
+]);
+
+const editProvider = (id: string) => {
+  toast.info(`Editar proveedor ${id} (simulado)`);
+};
+
+const deleteProvider = (id: string) => {
+  if (confirm("¿Seguro que deseas eliminar este proveedor?")) {
+    allProviders.value = allProviders.value.filter((p) => p.id !== id);
+    toast.success("Proveedor eliminado (simulado)");
+  }
+};
+
+const toggleProviderStatus = (id: string) => {
+  const prov = allProviders.value.find((p) => p.id === id);
+  if (prov) {
+    prov.status = prov.status === "Activo" ? "Inactivo" : "Activo";
+    toast.success(
+      `Proveedor ${prov.status === "Activo" ? "activado" : "desactivado"} (simulado)`
+    );
+  }
+};
+
 </script>
 
 <template>
@@ -242,7 +257,26 @@ const getFiltersButtonVariant = () => {
     <!-- Encabezado y Acciones Principales -->
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold md:text-3xl">Usuarios</h1>
-      <div class="flex items-center gap-2">
+    </div>
+    <div class="flex justify-between items-center">
+      <!-- tabs -->
+      <div class="flex items-center gap-2 mb-3">
+        <Button :variant="selectedTable === 'users' ? 'default' : 'outline'" @click="selectedTable = 'users'" class=""
+          :class="selectedTable === 'users'
+            ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
+            : 'rounded-r-none'">
+          <UsersIcon class="mr-2 h-4 w-4" /> Administradores y Empleados
+        </Button>
+        <Button :variant="selectedTable === 'providers' ? 'default' : 'outline'" @click="selectedTable = 'providers'"
+          :class="selectedTable === 'providers'
+            ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
+            : 'rounded-r-none'">
+          <Truck class="mr-2 h-4 w-4" /> Proveedores
+        </Button>
+      </div>
+
+      <!-- filtros y crear -->
+      <div class="flex items-center gap-2 mb-3">
         <Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
           ? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
           : ''
@@ -251,149 +285,264 @@ const getFiltersButtonVariant = () => {
           Filtros
           <Badge v-if="activeFilterCount > 0" variant="secondary" class="ml-2">{{ activeFilterCount }}</Badge>
         </Button>
-        <Dialog v-model:open="isCreateUserDialogOpen">
-          <DialogTrigger as-child>
-            <Button>
-              <PlusCircle class="mr-2 h-4 w-4" /> Crear Usuario
-            </Button>
-          </DialogTrigger>
-          <DialogContent class="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-              <DialogDescription>
-                Completa los detalles para añadir un nuevo usuario al sistema.
-              </DialogDescription>
-            </DialogHeader>
-            <div class="grid gap-4 py-4">
-              <div class="grid grid-cols-4 items-center gap-4">
-                <Label for="name" class="text-right"> Nombre </Label>
-                <Input id="name" v-model="newUserName" class="col-span-3" />
-              </div>
-              <div class="grid grid-cols-4 items-center gap-4">
-                <Label for="email" class="text-right"> Email </Label>
-                <Input id="email" type="email" v-model="newUserEmail" class="col-span-3" />
-              </div>
-              <div class="grid grid-cols-4 items-center gap-4">
-                <Label for="role" class="text-right"> Rol </Label>
-                <Select v-model="newUserRole">
-                  <SelectTrigger class="col-span-3">
-                    <SelectValue placeholder="Seleccionar rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Editor">Editor</SelectItem>
-                    <SelectItem value="Viewer">Viewer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" @click="handleCreateUser">
-                Guardar Usuario
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+        <Button @click="
+          selectedTable === 'users'
+            ? $router.push('/users/new')
+            : $router.push('/users/new-supplier')
+          ">
+          <PlusCircle class="mr-2 h-4 w-4" />
+          Crear
+          {{ selectedTable === 'users' ? 'Usuario' : 'Proveedor' }}
+        </Button>
+
       </div>
     </div>
 
+
+
     <!-- Contenido Principal: Tabla y Filtros -->
-    <div class="flex gap-6">
-      <!-- Columna de la Tabla -->
-      <div class="flex-1">
-        <Card>
-          <CardContent class="p-0">
-            <div class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead class="w-[80px]">Avatar</TableHead>
-                    <TableHead>
-                      <Button variant="ghost" @click="setSort('name')" class="px-1">
-                        Nombre
-                        <template v-if="sortKey === 'name'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
-                      </Button>
-                    </TableHead>
-                    <TableHead class="hidden md:table-cell">
-                      <Button variant="ghost" @click="setSort('email')" class="px-1">
-                        Email
-                        <template v-if="sortKey === 'email'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead class="hidden lg:table-cell">
-                      <Button variant="ghost" @click="setSort('createdAt')" class="px-1">
-                        Creado
-                        <template v-if="sortKey === 'createdAt'">
-                          <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
-                          <ArrowDown v-else class="ml-2 h-4 w-4" />
-                        </template>
-                        <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
-                      </Button>
-                    </TableHead>
-                    <TableHead class="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <template v-if="isLoading">
-                    <TableRow v-for="i in itemsPerPage" :key="`skel-${i}`">
-                      <TableCell>
-                        <Skeleton class="h-10 w-10 rounded-full" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton class="h-4 w-3/4" />
-                      </TableCell>
-                      <TableCell class="hidden md:table-cell">
-                        <Skeleton class="h-4 w-full" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton class="h-6 w-16 rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton class="h-6 w-16 rounded-md" />
-                      </TableCell>
-                      <TableCell class="hidden lg:table-cell">
-                        <Skeleton class="h-4 w-24" />
-                      </TableCell>
-                      <TableCell class="text-right">
-                        <Skeleton class="h-8 w-8" />
-                      </TableCell>
+    <div v-if="selectedTable === 'users'">
+      <div class="flex gap-6">
+        <!-- Columna de la Tabla -->
+        <div class="flex-1">
+          <Card>
+            <CardContent class="p-0">
+              <div class="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead class="w-[80px]">Avatar</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" @click="setSort('name')" class="px-1">
+                          Nombre
+                          <template v-if="sortKey === 'name'">
+                            <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
+                            <ArrowDown v-else class="ml-2 h-4 w-4" />
+                          </template>
+                          <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        </Button>
+                      </TableHead>
+                      <TableHead class="hidden md:table-cell">
+                        <Button variant="ghost" @click="setSort('email')" class="px-1">
+                          Email
+                          <template v-if="sortKey === 'email'">
+                            <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
+                            <ArrowDown v-else class="ml-2 h-4 w-4" />
+                          </template>
+                          <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        </Button>
+                      </TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead class="hidden lg:table-cell">
+                        <Button variant="ghost" @click="setSort('createdAt')" class="px-1">
+                          Creado
+                          <template v-if="sortKey === 'createdAt'">
+                            <ArrowUp v-if="sortOrder === 'asc'" class="ml-2 h-4 w-4" />
+                            <ArrowDown v-else class="ml-2 h-4 w-4" />
+                          </template>
+                          <ArrowUpDown v-else class="ml-2 h-4 w-4 opacity-50" />
+                        </Button>
+                      </TableHead>
+                      <TableHead class="text-right">Acciones</TableHead>
                     </TableRow>
-                  </template>
-                  <template v-else-if="paginatedUsers.length > 0">
-                    <TableRow v-for="user in paginatedUsers" :key="user.id">
+                  </TableHeader>
+                  <TableBody>
+                    <template v-if="isLoading">
+                      <TableRow v-for="i in itemsPerPage" :key="`skel-${i}`">
+                        <TableCell>
+                          <Skeleton class="h-10 w-10 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton class="h-4 w-3/4" />
+                        </TableCell>
+                        <TableCell class="hidden md:table-cell">
+                          <Skeleton class="h-4 w-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton class="h-6 w-16 rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton class="h-6 w-16 rounded-md" />
+                        </TableCell>
+                        <TableCell class="hidden lg:table-cell">
+                          <Skeleton class="h-4 w-24" />
+                        </TableCell>
+                        <TableCell class="text-right">
+                          <Skeleton class="h-8 w-8" />
+                        </TableCell>
+                      </TableRow>
+                    </template>
+                    <template v-else-if="paginatedUsers.length > 0">
+                      <TableRow v-for="user in paginatedUsers" :key="user.id">
+                        <TableCell>
+                          <Avatar>
+                            <!-- @vue-expect-error -->
+                            <AvatarImage :src="user.avatarUrl" :alt="user.name" />
+                            <AvatarFallback>{{ getInitials(user.name) }}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell class="font-medium">{{ user.name }}</TableCell>
+                        <TableCell class="hidden md:table-cell">{{ user.email }}</TableCell>
+                        <TableCell>
+                          <Badge :variant="user.role === 'Admin' ? 'default' : 'secondary'">
+                            {{ user.role }}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge class="capitalize" :class="{
+                            'border-green-500 text-green-600 bg-transparent font-bold': user.status === 'Active',
+                            'border-red-500 text-red-600 bg-transparent font-bold': user.status === 'Inactive',
+                          }">
+                            {{ user.status }}
+                          </Badge>
+                        </TableCell>
+                        <TableCell class="hidden lg:table-cell">{{ formatDate(user.createdAt) }}</TableCell>
+                        <TableCell class="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                              <Button variant="ghost" class="h-8 w-8 p-0">
+                                <span class="sr-only">Abrir menú</span>
+                                <MoreHorizontal class="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem @click="editUser(user.id)">
+                                <Pencil class="mr-2 h-4 w-4" /> Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem @click="deleteUser(user.id)"
+                                class="text-red-600 focus:bg-red-100 focus:text-red-700">
+                                <Trash2 class="mr-2 h-4 w-4" /> Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    </template>
+                    <template v-else>
+                      <TableRow>
+                        <TableCell colspan="7" class="h-48 text-center">
+                          <div class="flex flex-col items-center justify-center gap-4">
+                            <UsersIcon class="h-16 w-16 text-muted-foreground/50" />
+                            <p class="text-lg font-medium">No se encontraron usuarios</p>
+                            <p class="text-sm text-muted-foreground">Intenta ajustar tu búsqueda o filtros.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </template>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+            <CardFooter class="flex items-center justify-between border-t px-6 py-4">
+              <div class="text-sm text-muted-foreground">
+                Mostrando {{ paginatedUsers.length }} de {{ sortedUsers.length }} usuarios.
+              </div>
+              <div class="flex items-center space-x-2">
+                <Button variant="outline" size="sm" @click="prevPage" :disabled="currentPage === 1">
+                  Anterior
+                </Button>
+                <span class="text-sm font-medium">
+                  Página {{ totalPages > 0 ? currentPage : 0 }} de {{ totalPages }}
+                </span>
+                <Button variant="outline" size="sm" @click="nextPage"
+                  :disabled="currentPage === totalPages || totalPages === 0">
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <!-- Columna de Filtros (Sidebar) -->
+        <Transition name="slide-fade">
+          <div v-if="showFilters" class="w-64 flex-shrink-0">
+            <Card class="sticky top-6">
+              <CardHeader>
+                <CardTitle>Filtros</CardTitle>
+              </CardHeader>
+              <CardContent class="flex flex-col gap-6">
+                <div class="flex flex-col gap-2">
+                  <Label for="search-filter">Búsqueda</Label>
+                  <Input id="search-filter" placeholder="Nombre o email..." v-model="searchTerm" />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Label for="role-filter">Rol</Label>
+                  <Select v-model="selectedRole">
+                    <SelectTrigger id="role-filter">
+                      <SelectValue placeholder="Filtrar por Rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los Roles</SelectItem>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="Editor">Editor</SelectItem>
+                      <SelectItem value="Viewer">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Label for="status-filter">Estado</Label>
+                  <Select v-model="selectedStatus">
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="Filtrar por Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los Estados</SelectItem>
+                      <SelectItem value="Active">Activo</SelectItem>
+                      <SelectItem value="Inactive">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+                  :disabled="activeFilterCount === 0">
+                  Limpiar filtros
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </Transition>
+      </div>
+    </div>
+    <div v-if="selectedTable === 'providers'">
+      <div class="flex gap-6">
+        <!-- Columna de la Tabla -->
+        <div class="flex-1">
+          <Card>
+            <CardContent class="p-0">
+              <div class="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Correo</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Estatus</TableHead>
+                      <TableHead class="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="prov in allProviders" :key="prov.id">
+                      <TableCell>{{ prov.username }}</TableCell>
+                      <TableCell>{{ prov.name }}</TableCell>
+                      <TableCell>{{ prov.email }}</TableCell>
                       <TableCell>
-                        <Avatar>
-                          <!-- @vue-expect-error -->
-                          <AvatarImage :src="user.avatarUrl" :alt="user.name" />
-                          <AvatarFallback>{{ getInitials(user.name) }}</AvatarFallback>
-                        </Avatar>
-                      </TableCell>
-                      <TableCell class="font-medium">{{ user.name }}</TableCell>
-                      <TableCell class="hidden md:table-cell">{{ user.email }}</TableCell>
-                      <TableCell>
-                        <Badge :variant="user.role === 'Admin' ? 'default' : 'secondary'">
-                          {{ user.role }}
+                        <Badge :variant="prov.type === 'admin' ? 'default' : 'secondary'">
+                          {{ prov.type === 'admin' ? 'Admin' : 'Empleado' }}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge class="capitalize" :class="{
-                          'border-green-500 text-green-600 bg-transparent font-bold': user.status === 'Active',
-                          'border-red-500 text-red-600 bg-transparent font-bold': user.status === 'Inactive',
-                        }">
-                          {{ user.status }}
+                        <Badge class="capitalize" :class="prov.status === 'Activo'
+                          ? 'border-green-500 text-green-600 bg-transparent font-bold'
+                          : 'border-red-500 text-red-600 bg-transparent font-bold'">
+                          {{ prov.status }}
                         </Badge>
                       </TableCell>
-                      <TableCell class="hidden lg:table-cell">{{ formatDate(user.createdAt) }}</TableCell>
                       <TableCell class="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger as-child>
@@ -405,102 +554,78 @@ const getFiltersButtonVariant = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem @click="editUser(user.id)">
+                            <DropdownMenuItem @click="editProvider(prov.id)">
                               <Pencil class="mr-2 h-4 w-4" /> Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem @click="deleteUser(user.id)"
+                            <DropdownMenuItem @click="deleteProvider(prov.id)"
                               class="text-red-600 focus:bg-red-100 focus:text-red-700">
                               <Trash2 class="mr-2 h-4 w-4" /> Eliminar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem @click="toggleProviderStatus(prov.id)">
+                              <ArrowUpDown class="mr-2 h-4 w-4" />
+                              {{ prov.status === 'Activo' ? 'Desactivar' : 'Activar' }}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  </template>
-                  <template v-else>
-                    <TableRow>
-                      <TableCell colspan="7" class="h-48 text-center">
-                        <div class="flex flex-col items-center justify-center gap-4">
-                          <UsersIcon class="h-16 w-16 text-muted-foreground/50" />
-                          <p class="text-lg font-medium">No se encontraron usuarios</p>
-                          <p class="text-sm text-muted-foreground">Intenta ajustar tu búsqueda o filtros.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </template>
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-          <CardFooter class="flex items-center justify-between border-t px-6 py-4">
-            <div class="text-sm text-muted-foreground">
-              Mostrando {{ paginatedUsers.length }} de {{ sortedUsers.length }} usuarios.
-            </div>
-            <div class="flex items-center space-x-2">
-              <Button variant="outline" size="sm" @click="prevPage" :disabled="currentPage === 1">
-                Anterior
-              </Button>
-              <span class="text-sm font-medium">
-                Página {{ totalPages > 0 ? currentPage : 0 }} de {{ totalPages }}
-              </span>
-              <Button variant="outline" size="sm" @click="nextPage"
-                :disabled="currentPage === totalPages || totalPages === 0">
-                Siguiente
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
-
-      <!-- Columna de Filtros (Sidebar) -->
-      <Transition name="slide-fade">
-        <div v-if="showFilters" class="w-64 flex-shrink-0">
-          <Card class="sticky top-6">
-            <CardHeader>
-              <CardTitle>Filtros</CardTitle>
-            </CardHeader>
-            <CardContent class="flex flex-col gap-6">
-              <div class="flex flex-col gap-2">
-                <Label for="search-filter">Búsqueda</Label>
-                <Input id="search-filter" placeholder="Nombre o email..." v-model="searchTerm" />
-              </div>
-              <div class="flex flex-col gap-2">
-                <Label for="role-filter">Rol</Label>
-                <Select v-model="selectedRole">
-                  <SelectTrigger id="role-filter">
-                    <SelectValue placeholder="Filtrar por Rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los Roles</SelectItem>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Editor">Editor</SelectItem>
-                    <SelectItem value="Viewer">Viewer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="flex flex-col gap-2">
-                <Label for="status-filter">Estado</Label>
-                <Select v-model="selectedStatus">
-                  <SelectTrigger id="status-filter">
-                    <SelectValue placeholder="Filtrar por Estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los Estados</SelectItem>
-                    <SelectItem value="Active">Activo</SelectItem>
-                    <SelectItem value="Inactive">Inactivo</SelectItem>
-                  </SelectContent>
-                </Select>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
-                :disabled="activeFilterCount === 0">
-                Limpiar filtros
-              </Button>
-            </CardFooter>
           </Card>
         </div>
-      </Transition>
+
+        <!-- Columna de Filtros (Sidebar) -->
+        <Transition name="slide-fade">
+          <div v-if="showFilters" class="w-64 flex-shrink-0">
+            <Card class="sticky top-6">
+              <CardHeader>
+                <CardTitle>Filtros</CardTitle>
+              </CardHeader>
+              <CardContent class="flex flex-col gap-6">
+                <div class="flex flex-col gap-2">
+                  <Label for="search-filter">Búsqueda</Label>
+                  <Input id="search-filter" placeholder="Nombre o email..." v-model="searchTerm" />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Label for="role-filter">Rol</Label>
+                  <Select v-model="selectedRole">
+                    <SelectTrigger id="role-filter">
+                      <SelectValue placeholder="Filtrar por Rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los Roles</SelectItem>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="Editor">Editor</SelectItem>
+                      <SelectItem value="Viewer">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <Label for="status-filter">Estado</Label>
+                  <Select v-model="selectedStatus">
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="Filtrar por Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los Estados</SelectItem>
+                      <SelectItem value="Active">Activo</SelectItem>
+                      <SelectItem value="Inactive">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+                  :disabled="activeFilterCount === 0">
+                  Limpiar filtros
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </Transition>
+      </div>
     </div>
   </div>
 </template>

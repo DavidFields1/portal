@@ -202,11 +202,7 @@ const submitInvoice = async () => {
                 </div>
               </div>
 
-              <div class="flex justify-end pt-4">
-                <Button class="w-full" :disabled="!pdfFile || !xmlFile" @click="nextStep">
-                  Continuar →
-                </Button>
-              </div>
+
             </div>
 
             <!-- Paso 2: Confirmar -->
@@ -221,22 +217,6 @@ const submitInvoice = async () => {
                   <span class="text-muted-foreground">Archivo XML:</span>
                   <span class="font-medium">{{ xmlFile?.name }}</span>
                 </div>
-              </div>
-              <div class="flex space-x-2 pt-4">
-                <Button variant="outline" size="sm" class="flex-1" @click="prevStep" :disabled="isSubmitting">
-                  ← Volver
-                </Button>
-                <Button size="sm" class="flex-1" @click="submitInvoice" :disabled="isSubmitting">
-                  <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                    </path>
-                  </svg>
-                  <span v-if="isSubmitting">Procesando...</span>
-                  <span v-else>Confirmar Carga</span>
-                </Button>
               </div>
             </div>
           </CardContent>
@@ -271,6 +251,27 @@ const submitInvoice = async () => {
                 </li>
               </ol>
             </nav>
+            <div v-if="currentStepIndex == 0" class="flex justify-end pt-4">
+              <Button class="w-full" :disabled="!pdfFile || !xmlFile" @click="nextStep">
+                Continuar →
+              </Button>
+            </div>
+            <div v-if="currentStepIndex == 1" class="flex space-x-2 pt-4">
+              <Button variant="outline" size="sm" class="flex-1" @click="prevStep" :disabled="isSubmitting">
+                ← Volver
+              </Button>
+              <Button size="sm" class="flex-1" @click="submitInvoice" :disabled="isSubmitting">
+                <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                  </path>
+                </svg>
+                <span v-if="isSubmitting">Procesando...</span>
+                <span v-else>Confirmar Carga</span>
+              </Button>
+            </div>
           </CardHeader>
         </Card>
       </div>
