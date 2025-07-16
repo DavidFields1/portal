@@ -6,18 +6,18 @@ import { computed, type HTMLAttributes } from 'vue'
 const props = defineProps<DialogDescriptionProps & { class?: HTMLAttributes['class'] }>()
 
 const delegatedProps = computed(() => {
-  const { class: _, ...delegated } = props
+	const { class: _, ...delegated } = props
 
-  return delegated
+	return delegated
 })
 </script>
 
 <template>
-  <DialogDescription
-    data-slot="sheet-description"
-    :class="cn('text-muted-foreground text-sm', props.class)"
-    v-bind="delegatedProps"
-  >
-    <slot />
-  </DialogDescription>
+	<DialogDescription
+		data-slot="sheet-description"
+		:class="cn('text-muted-foreground text-sm', props.class)"
+		v-bind="delegatedProps"
+	>
+		<slot />
+	</DialogDescription>
 </template>
