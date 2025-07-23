@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
 	},
 })
 
-app.use(pinia) // Usar Pinia
+app.use(pinia)
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })
 useAuthStore(pinia).loadFromStorage()

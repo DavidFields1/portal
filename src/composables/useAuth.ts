@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import axios from 'axios'
 import { useAuthStore } from '@/stores/authStore'
 import { useMutation } from '@tanstack/vue-query'
 import { AuthenticatedUserSchema, type AuthenticatedUser } from '@/schemas/authSchemas'
+import axiosInstance from '@/config/axiosInstance'
 // import { toast } from 'vue-sonner'
 
 export const credentialsSchema = z.object({
@@ -17,7 +17,7 @@ export function useLogin() {
 	return useMutation<AuthenticatedUser, Error, Credentials>({
 		mutationFn: async (creds: Credentials) => {
 			credentialsSchema.parse(creds)
-			const { data } = await axios.post('http://13.216.21.166/reciboo-api/auth/signin', creds)
+			const { data } = await axiosInstance.post('/auth/signin', creds)
 			return AuthenticatedUserSchema.parse(data)
 		},
 		onSuccess(userData: AuthenticatedUser) {
