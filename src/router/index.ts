@@ -1,17 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth' // Importar store
-// import AdminLayout from '@/layouts/AdminLayout.vue' // Importar el Layout
+import { useAuthStore } from '@/stores/authStore'
 import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
-// Podrías añadir una vista para 'NotFound' si quieres
-// import NotFoundView from '../views/NotFoundView.vue';
 
 const router = createRouter({
-	history: createWebHistory(import.meta.env.BASE_URL),
+	history: createWebHistory(),
 	routes: [
-		// Rutas que requieren autenticación (usan el Layout)
 		{
 			path: '/',
 			component: AdminLayout, // Usar el Layout como componente padre
@@ -27,16 +22,6 @@ const router = createRouter({
 					name: 'invoices',
 					component: () => import('@/views/MyInvoices.vue'), // Carga lazy
 				},
-				// {
-				// 	path: 'invoices-monitor', // Nueva ruta
-				// 	name: 'invoices-monitor',
-				// 	component: () => import('@/views/InvoicesMonitorView.vue'), // Carga lazy
-				// },
-				// {
-				// 	path: 'invoices-monitor/:uuid', // Nueva ruta
-				// 	name: 'invoice-monitor-detail',
-				// 	component: () => import('@/views/InvoiceMonitorDetailView.vue'), // Carga lazy
-				// },
 				{
 					path: '/invoices/:uuid',
 					name: 'invoice-detail',
@@ -88,16 +73,8 @@ const router = createRouter({
 					name: 'purchase-order-detail',
 					component: () => import('@/views/PurchaseOrderDetailView.vue'), // Carga lazy
 				},
-				// --- Añade aquí otras rutas protegidas ---
-				// Ejemplo:
-				// {
-				//   path: 'users',
-				//   name: 'users',
-				//   component: () => import('../views/UsersView.vue') // Lazy loading
-				// },
 			],
 		},
-		// Rutas públicas (Login, Register)
 		{
 			path: '/users',
 			name: 'users',
@@ -169,29 +146,17 @@ const router = createRouter({
 			component: LoginView,
 			meta: { requiresGuest: true }, // Redirigir si ya está logueado
 		},
-		{
-			path: '/register',
-			name: 'register',
-			component: RegisterView,
-			meta: { requiresGuest: true }, // Redirigir si ya está logueado
-		},
 		// Ruta Catch-all (Opcional)
 		// { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFoundView },
 	],
 })
 
-// Guardia de Navegación Global
 router.beforeEach((to, from, next) => {
-	// Es crucial instanciar el store DENTRO del guard
-	// porque el router se inicializa antes que Pinia fuera de este contexto.
 	const authStore = useAuthStore()
+	console.log('guard is auth', authStore.isAuthenticated)
 
 	const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 	const requiresGuest = to.matched.some((record) => record.meta.requiresGuest)
-
-	console.log(
-		`Navegando a: ${to.path}, requiresAuth: ${requiresAuth}, requiresGuest: ${requiresGuest}, isAuthenticated: ${authStore.isAuthenticated}`,
-	)
 
 	if (requiresAuth && !authStore.isAuthenticated) {
 		// Si requiere autenticación y no está logueado, redirige a login

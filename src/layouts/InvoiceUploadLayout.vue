@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterView, RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { useLayoutStore } from '@/stores/layout' // <-- 1. Importar el store del layout
+import { useAuthStore } from '@/stores/authStore'
+import { useLayoutStore } from '@/stores/layoutStore' // <-- 1. Importar el store del layout
 
 import {
 	LayoutDashboard,
@@ -235,25 +235,15 @@ onUnmounted(() => {
 		<!-- Sidebar Izquierdo (sin cambios) -->
 		<aside :class="sidebarClasses">
 			<div class="flex h-full flex-col">
-				<div
-					class="flex h-16 shrink-0 items-center border-b border-border"
-					:class="[sidebarCollapsed && !isMobile ? 'justify-center' : 'px-4']"
-				>
-					<RouterLink
-						to="/"
-						:class="['flex items-center', sidebarCollapsed && !isMobile ? '' : 'gap-2']"
-					>
+				<div class="flex h-16 shrink-0 items-center border-b border-border"
+					:class="[sidebarCollapsed && !isMobile ? 'justify-center' : 'px-4']">
+					<RouterLink to="/" :class="['flex items-center', sidebarCollapsed && !isMobile ? '' : 'gap-2']">
 						<!-- <LayoutDashboard class="h-6 w-6 text-primary" /> -->
 						<img src="../assets/logo.svg" alt="Reciboo" class="h-10 w-10 mb-1" />
-						<Transition
-							enter-active-class="transition-opacity duration-200"
-							leave-active-class="transition-opacity duration-200"
-							enter-from-class="opacity-0"
-							leave-to-class="opacity-0"
-						>
-							<span v-if="!sidebarCollapsed || isMobile" class="font-semibold"
-								>RECIBOO</span
-							>
+						<Transition enter-active-class="transition-opacity duration-200"
+							leave-active-class="transition-opacity duration-200" enter-from-class="opacity-0"
+							leave-to-class="opacity-0">
+							<span v-if="!sidebarCollapsed || isMobile" class="font-semibold">RECIBOO</span>
 						</Transition>
 					</RouterLink>
 				</div>
@@ -263,91 +253,55 @@ onUnmounted(() => {
 					<nav class="space-y-1">
 						<div v-for="item in navMain" :key="item.title">
 							<!-- Caso 1: Enlace simple (sin sub-items) -->
-							<RouterLink
-								v-if="!item.items"
-								:to="item.url"
-								@click="closeSidebar"
-								class="flex w-full items-center gap-3 rounded-lg p-2 text-sm hover:bg-muted"
-								:class="{
+							<RouterLink v-if="!item.items" :to="item.url" @click="closeSidebar"
+								class="flex w-full items-center gap-3 rounded-lg p-2 text-sm hover:bg-muted" :class="{
 									'justify-center': sidebarCollapsed && !isMobile,
 									'bg-muted font-semibold': $route.path === item.url,
-								}"
-								:title="sidebarCollapsed && !isMobile ? item.title : ''"
-							>
+								}" :title="sidebarCollapsed && !isMobile ? item.title : ''">
 								<component :is="item.icon" class="h-5 w-5 shrink-0" />
-								<Transition
-									enter-active-class="transition-opacity duration-200"
-									leave-active-class="transition-opacity duration-200"
-									enter-from-class="opacity-0"
-									leave-to-class="opacity-0"
-								>
-									<span
-										v-if="!sidebarCollapsed || isMobile"
-										class="flex-1 text-left"
-										>{{ item.title }}</span
-									>
+								<Transition enter-active-class="transition-opacity duration-200"
+									leave-active-class="transition-opacity duration-200" enter-from-class="opacity-0"
+									leave-to-class="opacity-0">
+									<span v-if="!sidebarCollapsed || isMobile" class="flex-1 text-left">{{ item.title
+									}}</span>
 								</Transition>
 							</RouterLink>
 
 							<!-- Caso 2: Ítem con submenú -->
 							<div v-else>
-								<Popover
-									:open="
-										hoveredNavItem === item.title &&
-										sidebarCollapsed &&
-										!isMobile
-									"
-								>
+								<Popover :open="hoveredNavItem === item.title &&
+									sidebarCollapsed &&
+									!isMobile
+									">
 									<PopoverTrigger as-child>
-										<button
-											@click="toggleNavItem(item.title)"
-											@mouseenter="handleMouseEnter(item.title)"
-											@mouseleave="handleMouseLeave"
+										<button @click="toggleNavItem(item.title)"
+											@mouseenter="handleMouseEnter(item.title)" @mouseleave="handleMouseLeave"
 											class="flex w-full items-center gap-3 rounded-lg p-2 text-sm hover:bg-muted"
 											:class="{
 												'justify-center': sidebarCollapsed && !isMobile,
-											}"
-											:title="sidebarCollapsed && !isMobile ? item.title : ''"
-										>
+											}" :title="sidebarCollapsed && !isMobile ? item.title : ''">
 											<component :is="item.icon" class="h-5 w-5 shrink-0" />
-											<Transition
-												enter-active-class="transition-opacity duration-200"
+											<Transition enter-active-class="transition-opacity duration-200"
 												leave-active-class="transition-opacity duration-200"
-												enter-from-class="opacity-0"
-												leave-to-class="opacity-0"
-											>
-												<span
-													v-if="!sidebarCollapsed || isMobile"
-													class="flex-1 text-left"
-													>{{ item.title }}</span
-												>
+												enter-from-class="opacity-0" leave-to-class="opacity-0">
+												<span v-if="!sidebarCollapsed || isMobile" class="flex-1 text-left">{{
+													item.title }}</span>
 											</Transition>
-											<ChevronRight
-												v-if="(!sidebarCollapsed || isMobile) && item.items"
+											<ChevronRight v-if="(!sidebarCollapsed || isMobile) && item.items"
 												class="ml-auto h-4 w-4 shrink-0 transition-transform duration-200"
-												:class="{ 'rotate-90': isNavItemOpen(item.title) }"
-											/>
+												:class="{ 'rotate-90': isNavItemOpen(item.title) }" />
 										</button>
 									</PopoverTrigger>
-									<PopoverContent
-										side="right"
-										align="start"
-										class="ml-2 w-48 p-1"
-										@mouseenter="handleMouseEnter(item.title)"
-										@mouseleave="handleMouseLeave"
-									>
+									<PopoverContent side="right" align="start" class="ml-2 w-48 p-1"
+										@mouseenter="handleMouseEnter(item.title)" @mouseleave="handleMouseLeave">
 										<nav class="flex flex-col space-y-1">
-											<RouterLink
-												v-for="subItem in item.items"
-												:key="subItem.title"
-												:to="subItem.url"
-												@click="closeSidebar"
+											<RouterLink v-for="subItem in item.items" :key="subItem.title"
+												:to="subItem.url" @click="closeSidebar"
 												class="block rounded-md p-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
 												:class="{
 													'bg-accent text-accent-foreground font-medium':
 														$route.path === subItem.url,
-												}"
-											>
+												}">
 												{{ subItem.title }}
 											</RouterLink>
 										</nav>
@@ -355,21 +309,15 @@ onUnmounted(() => {
 								</Popover>
 
 								<!-- Submenu tipo acordeón (para vista expandida) -->
-								<div
-									v-if="isNavItemOpen(item.title)"
-									class="ml-4 mt-1 space-y-1 overflow-hidden border-l pl-4"
-								>
-									<RouterLink
-										v-for="subItem in item.items"
-										:key="subItem.title"
-										:to="subItem.url"
+								<div v-if="isNavItemOpen(item.title)"
+									class="ml-4 mt-1 space-y-1 overflow-hidden border-l pl-4">
+									<RouterLink v-for="subItem in item.items" :key="subItem.title" :to="subItem.url"
 										@click="closeSidebar"
 										class="block rounded-lg p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 										:class="{
 											'bg-muted font-semibold text-foreground':
 												$route.path === subItem.url,
-										}"
-									>
+										}">
 										{{ subItem.title }}
 									</RouterLink>
 								</div>
@@ -380,21 +328,12 @@ onUnmounted(() => {
 
 				<!-- Sidebar Footer -->
 				<div class="border-t border-border p-4">
-					<div
-						v-if="!sidebarCollapsed || isMobile"
-						class="flex w-full items-center justify-between gap-3"
-					>
+					<div v-if="!sidebarCollapsed || isMobile" class="flex w-full items-center justify-between gap-3">
 						<div class="flex items-center gap-3 overflow-hidden">
-							<img
-								v-if="user?.avatarUrl"
-								:src="user.avatarUrl"
-								:alt="user.name"
-								class="h-8 w-8 rounded-full shrink-0"
-							/>
-							<div
-								v-else
-								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold"
-							>
+							<img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.name"
+								class="h-8 w-8 rounded-full shrink-0" />
+							<div v-else
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
 								{{ getInitials(user?.name) }}
 							</div>
 							<div class="flex flex-1 flex-col text-left overflow-hidden">
@@ -406,34 +345,22 @@ onUnmounted(() => {
 								}}</span>
 							</div>
 						</div>
-						<Button
-							variant="ghost"
-							size="icon"
+						<Button variant="ghost" size="icon"
 							class="h-8 w-8 shrink-0 transition-colors cursor-pointer hover:text-destructive"
-							@click="handleLogout"
-						>
+							@click="handleLogout">
 							<LogOut class="h-4 w-4" />
 						</Button>
 					</div>
 					<div v-else class="flex flex-col items-center gap-4">
-						<img
-							v-if="user?.avatarUrl"
-							:src="user.avatarUrl"
-							:alt="user.name"
-							class="h-8 w-8 rounded-full shrink-0"
-						/>
-						<div
-							v-else
-							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold"
-						>
+						<img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.name"
+							class="h-8 w-8 rounded-full shrink-0" />
+						<div v-else
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
 							{{ getInitials(user?.name) }}
 						</div>
-						<Button
-							variant="ghost"
-							size="icon"
+						<Button variant="ghost" size="icon"
 							class="h-8 w-8 shrink-0 transition-colors hover:text-destructive cursor-pointer"
-							@click="handleLogout"
-						>
+							@click="handleLogout">
 							<LogOut class="h-4 w-4 ml-2" />
 						</Button>
 					</div>
@@ -444,9 +371,7 @@ onUnmounted(() => {
 		<!-- Contenido Principal -->
 		<div :class="mainContentClasses">
 			<!-- Header (sin cambios) -->
-			<header
-				class="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 bg-background"
-			>
+			<header class="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 bg-background">
 				<button @click="toggleSidebar" class="rounded-lg p-2 hover:bg-muted">
 					<PanelLeft class="h-5 w-5" />
 				</button>
@@ -458,17 +383,10 @@ onUnmounted(() => {
 					<!-- Botón de Notificaciones Mejorado -->
 					<Popover>
 						<PopoverTrigger asChild>
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-9 gap-2 px-3 border-muted relative"
-							>
+							<Button variant="outline" size="sm" class="h-9 gap-2 px-3 border-muted relative">
 								<Bell class="h-4 w-4" />
-								<Badge
-									v-if="unreadNotificationsCount > 0"
-									variant="default"
-									class="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center"
-								>
+								<Badge v-if="unreadNotificationsCount > 0" variant="default"
+									class="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center">
 									{{ unreadNotificationsCount }}
 								</Badge>
 							</Button>
@@ -476,38 +394,25 @@ onUnmounted(() => {
 						<PopoverContent align="end" class="w-96 p-0">
 							<div class="flex items-center justify-between p-4 border-b">
 								<h3 class="font-semibold text-lg">Notificaciones</h3>
-								<Button
-									variant="ghost"
-									size="sm"
-									class="text-xs h-8 px-2 text-primary"
-									@click="markAllAsRead"
-									:disabled="unreadNotificationsCount === 0"
-								>
+								<Button variant="ghost" size="sm" class="text-xs h-8 px-2 text-primary"
+									@click="markAllAsRead" :disabled="unreadNotificationsCount === 0">
 									<Check class="h-4 w-4 mr-1" />
 									Marcar todas como leídas
 								</Button>
 							</div>
 
 							<div class="max-h-[400px] overflow-y-auto">
-								<div
-									v-if="notifications.length === 0"
-									class="p-6 text-center text-sm text-muted-foreground"
-								>
+								<div v-if="notifications.length === 0"
+									class="p-6 text-center text-sm text-muted-foreground">
 									No tienes notificaciones.
 								</div>
 								<div v-else>
-									<div
-										v-for="notification in notifications"
-										:key="notification.id"
+									<div v-for="notification in notifications" :key="notification.id"
 										class="flex items-start gap-3 p-3 hover:bg-muted border-b last:border-b-0 transition-colors"
-										:class="{ 'bg-muted/40': !notification.read }"
-									>
-										<div
-											class="h-2 w-2 shrink-0 rounded-full mt-2"
-											:class="[
-												notification.read ? 'bg-transparent' : 'bg-primary',
-											]"
-										></div>
+										:class="{ 'bg-muted/40': !notification.read }">
+										<div class="h-2 w-2 shrink-0 rounded-full mt-2" :class="[
+											notification.read ? 'bg-transparent' : 'bg-primary',
+										]"></div>
 										<div class="flex-1">
 											<div class="flex items-center justify-between">
 												<p class="font-medium text-sm">
@@ -520,16 +425,9 @@ onUnmounted(() => {
 											<p class="text-xs text-muted-foreground mt-1">
 												{{ notification.description }}
 											</p>
-											<div
-												class="flex justify-end mt-2"
-												v-if="!notification.read"
-											>
-												<Button
-													variant="ghost"
-													size="sm"
-													class="h-7 text-xs text-primary"
-													@click="markAsRead(notification.id)"
-												>
+											<div class="flex justify-end mt-2" v-if="!notification.read">
+												<Button variant="ghost" size="sm" class="h-7 text-xs text-primary"
+													@click="markAsRead(notification.id)">
 													Marcar como leída
 												</Button>
 											</div>
@@ -557,19 +455,12 @@ onUnmounted(() => {
 						<DropdownMenuContent align="end" class="w-40">
 							<DropdownMenuLabel>Seleccionar idioma</DropdownMenuLabel>
 							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								v-for="lang in languages"
-								:key="lang.code"
-								@click="changeLanguage(lang.code)"
-								:class="{ 'bg-muted': currentLang === lang.code }"
-							>
+							<DropdownMenuItem v-for="lang in languages" :key="lang.code"
+								@click="changeLanguage(lang.code)" :class="{ 'bg-muted': currentLang === lang.code }">
 								<div class="flex items-center gap-2">
 									<span class="text-lg">{{ lang.flag }}</span>
 									<span>{{ lang.name }}</span>
-									<Check
-										v-if="currentLang === lang.code"
-										class="h-4 w-4 ml-auto"
-									/>
+									<Check v-if="currentLang === lang.code" class="h-4 w-4 ml-auto" />
 								</div>
 							</DropdownMenuItem>
 						</DropdownMenuContent>
@@ -584,23 +475,15 @@ onUnmounted(() => {
 		</div>
 
 		<!-- 4. AÑADIR: Sidebar Derecho -->
-		<aside
-			v-if="layoutStore.isRightSidebarVisible"
-			class="fixed top-0 right-0 z-30 h-screen w-80 bg-background border-l border-border"
-		>
+		<aside v-if="layoutStore.isRightSidebarVisible"
+			class="fixed top-0 right-0 z-30 h-screen w-80 bg-background border-l border-border">
 			<!-- Este componente renderizará lo que la vista le diga al store -->
-			<component
-				:is="layoutStore.rightSidebarComponent"
-				v-bind="layoutStore.rightSidebarProps"
-			/>
+			<component :is="layoutStore.rightSidebarComponent" v-bind="layoutStore.rightSidebarProps" />
 		</aside>
 
 		<!-- Overlay para sidebar móvil (sin cambios) -->
-		<div
-			v-if="sidebarOpen && isMobile"
-			@click="closeSidebar"
-			class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
-		></div>
+		<div v-if="sidebarOpen && isMobile" @click="closeSidebar"
+			class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"></div>
 		<Toaster richColors position="top-right" />
 	</div>
 </template>

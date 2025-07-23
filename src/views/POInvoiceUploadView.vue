@@ -27,7 +27,7 @@ import {
 	CommandItem,
 	CommandList,
 } from '@/components/ui/command'
-import { useLayoutStore } from '@/stores/layout'
+import { useLayoutStore } from '@/stores/layoutStore'
 import InvoiceUploadStepper from '@/components/layout/InvoiceUploadStepper.vue'
 // import Label from "@/components/ui/label/Label.vue";
 import Input from '@/components/ui/input/Input.vue'
@@ -476,12 +476,8 @@ const invoiceData = ref({
 						<CardContent>
 							<Popover v-model:open="isSupplierPopoverOpen">
 								<PopoverTrigger as-child>
-									<Button
-										variant="outline"
-										role="combobox"
-										:aria-expanded="isSupplierPopoverOpen"
-										class="w-full justify-between"
-									>
+									<Button variant="outline" role="combobox" :aria-expanded="isSupplierPopoverOpen"
+										class="w-full justify-between">
 										{{ currentSupplierName || 'Seleccionar proveedor...' }}
 										<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
 									</Button>
@@ -490,31 +486,19 @@ const invoiceData = ref({
 									<Command>
 										<CommandInput placeholder="Buscar proveedor..." />
 										<CommandList>
-											<CommandEmpty
-												>No se encontró el proveedor.</CommandEmpty
-											>
+											<CommandEmpty>No se encontró el proveedor.</CommandEmpty>
 											<CommandGroup>
-												<CommandItem
-													v-for="supplier in allSuppliers"
-													:key="supplier.id"
-													:value="supplier.name"
-													@select="() => selectSupplier(supplier)"
-													class="flex items-center"
-												>
-													<Check
-														class="mr-2 h-4 w-4"
-														:class="
-															selectedSupplierId === supplier.id
-																? 'opacity-100'
-																: 'opacity-0'
-														"
-													/>
+												<CommandItem v-for="supplier in allSuppliers" :key="supplier.id"
+													:value="supplier.name" @select="() => selectSupplier(supplier)"
+													class="flex items-center">
+													<Check class="mr-2 h-4 w-4" :class="selectedSupplierId === supplier.id
+															? 'opacity-100'
+															: 'opacity-0'
+														" />
 													<div class="flex flex-col">
 														<span>{{ supplier.name }}</span>
-														<span
-															class="text-xs text-muted-foreground"
-															>{{ supplier.rfc }}</span
-														>
+														<span class="text-xs text-muted-foreground">{{ supplier.rfc
+															}}</span>
 													</div>
 												</CommandItem>
 											</CommandGroup>
@@ -532,29 +516,20 @@ const invoiceData = ref({
 									<CardTitle>Órdenes de Compra</CardTitle>
 									<CardDescription>{{ currentSupplierName }}</CardDescription>
 								</div>
-								<Button variant="outline" size="sm" @click="resetSupplierSelection"
-									>Cambiar</Button
-								>
+								<Button variant="outline" size="sm" @click="resetSupplierSelection">Cambiar</Button>
 							</div>
 						</CardHeader>
 						<CardContent class="space-y-2 max-h-[60vh] overflow-y-auto">
-							<Button
-								v-for="po in filteredPurchaseOrders"
-								:key="po.id"
-								variant="ghost"
+							<Button v-for="po in filteredPurchaseOrders" :key="po.id" variant="ghost"
 								class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm"
 								:class="{
 									'bg-accent border-l-4 border-l-primary': selectedPOId === po.id,
-								}"
-								@click="selectPO(po.id)"
-							>
+								}" @click="selectPO(po.id)">
 								<div class="flex w-full justify-between items-center">
 									<span class="font-semibold text-sm">{{ po.number }}</span>
 									<Badge variant="outline" class="text-xs">{{ po.status }}</Badge>
 								</div>
-								<div
-									class="flex w-full justify-between text-xs text-muted-foreground mt-1"
-								>
+								<div class="flex w-full justify-between text-xs text-muted-foreground mt-1">
 									<span>{{ po.date }}</span>
 									<span class="font-mono">{{
 										formatCurrency(po.totalAmount)
@@ -567,10 +542,7 @@ const invoiceData = ref({
 			</div>
 
 			<!-- COLUMNA CENTRAL: Entradas y Selección -->
-			<div
-				class="lg:col-span-4 space-y-4"
-				:class="{ 'opacity-60 pointer-events-none': isSelectionLocked }"
-			>
+			<div class="lg:col-span-4 space-y-4" :class="{ 'opacity-60 pointer-events-none': isSelectionLocked }">
 				<Card>
 					<CardHeader v-if="selectedPO">
 						<CardTitle class="text-lg">Entradas de Mercancía</CardTitle>
@@ -586,26 +558,16 @@ const invoiceData = ref({
 							<p class="text-sm">para ver sus entradas de mercancía</p>
 						</div>
 						<div v-else-if="selectedPO.goodsReceipts.length > 0" class="space-y-3">
-							<div
-								v-for="gr in selectedPO.goodsReceipts"
-								:key="gr.id"
-								class="rounded-lg border p-3 transition-all hover:shadow-sm"
-								:class="{
+							<div v-for="gr in selectedPO.goodsReceipts" :key="gr.id"
+								class="rounded-lg border p-3 transition-all hover:shadow-sm" :class="{
 									'opacity-50 cursor-not-allowed': gr.status === 'Facturado',
-								}"
-							>
-								<Label
-									:for="`native-${gr.id}`"
-									class="flex items-start space-x-3 w-full cursor-pointer"
-								>
-									<input
-										type="checkbox"
-										:id="`native-${gr.id}`"
-										:checked="isGRSelected(gr.id)"
+								}">
+								<Label :for="`native-${gr.id}`"
+									class="flex items-start space-x-3 w-full cursor-pointer">
+									<input type="checkbox" :id="`native-${gr.id}`" :checked="isGRSelected(gr.id)"
 										:disabled="gr.status === 'Facturado'"
 										class="w-4 h-4 rounded border-input bg-background text-primary accent-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-										@change="toggleGRSelection(gr)"
-									/>
+										@change="toggleGRSelection(gr)" />
 									<div class="flex-1 min-w-0">
 										<div class="flex justify-between items-start mb-1">
 											<span class="font-medium text-sm">{{ gr.number }}</span>
@@ -616,9 +578,7 @@ const invoiceData = ref({
 										<p class="font-bold text-sm text-foreground">
 											{{ gr.material }}
 										</p>
-										<div
-											class="flex justify-between text-xs text-muted-foreground mt-2"
-										>
+										<div class="flex justify-between text-xs text-muted-foreground mt-2">
 											<span>{{ gr.date }}</span>
 											<span>IVA: {{ formatCurrency(gr.iva) }}</span>
 										</div>
@@ -641,11 +601,8 @@ const invoiceData = ref({
 					</CardHeader>
 					<CardContent>
 						<div class="space-y-2 mb-4">
-							<div
-								v-for="gr in selectedGRs"
-								:key="gr.id"
-								class="flex justify-between items-center text-sm p-2 rounded-md hover:bg-muted/50"
-							>
+							<div v-for="gr in selectedGRs" :key="gr.id"
+								class="flex justify-between items-center text-sm p-2 rounded-md hover:bg-muted/50">
 								<div class="flex-1 min-w-0">
 									<p class="font-medium truncate">
 										{{ gr.number }} - {{ gr.material }}
@@ -654,12 +611,8 @@ const invoiceData = ref({
 										{{ formatCurrency(gr.amount) }}
 									</p>
 								</div>
-								<Button
-									variant="ghost"
-									size="icon"
-									class="h-7 w-7 shrink-0"
-									@click="removeSelectedGR(gr.id)"
-								>
+								<Button variant="ghost" size="icon" class="h-7 w-7 shrink-0"
+									@click="removeSelectedGR(gr.id)">
 									<X class="h-4 w-4" />
 								</Button>
 							</div>
@@ -680,36 +633,23 @@ const invoiceData = ref({
 						<CardTitle>Proceso de Carga</CardTitle>
 						<nav aria-label="Progreso de carga" class="mt-4">
 							<ol class="space-y-4">
-								<li
-									v-for="(step, index) in steps"
-									:key="step.id"
-									class="flex items-center text-sm"
-								>
-									<span
-										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mr-3"
+								<li v-for="(step, index) in steps" :key="step.id" class="flex items-center text-sm">
+									<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mr-3"
 										:class="{
 											'bg-primary text-primary-foreground':
 												index === currentStepIndex,
 											'bg-green-600 text-white': index < currentStepIndex,
 											'bg-muted text-muted-foreground border':
 												index > currentStepIndex,
-										}"
-									>
-										<component
-											v-if="index < currentStepIndex"
-											:is="CheckCircle"
-											class="h-4 w-4"
-										/>
+										}">
+										<component v-if="index < currentStepIndex" :is="CheckCircle" class="h-4 w-4" />
 										<component v-else :is="step.icon" class="h-4 w-4" />
 									</span>
-									<span
-										class="font-medium"
-										:class="{
-											'text-primary': index === currentStepIndex,
-											'text-green-700': index < currentStepIndex,
-											'text-muted-foreground': index > currentStepIndex,
-										}"
-									>
+									<span class="font-medium" :class="{
+										'text-primary': index === currentStepIndex,
+										'text-green-700': index < currentStepIndex,
+										'text-muted-foreground': index > currentStepIndex,
+									}">
 										{{ step.name }}
 									</span>
 								</li>
@@ -719,19 +659,13 @@ const invoiceData = ref({
 					<Separator />
 					<CardContent class="mt-4">
 						<!-- Paso 0 y 1: Seleccionar Proveedor y Entradas -->
-						<div
-							v-if="currentStepIndex === 0"
-							class="text-center text-muted-foreground py-4"
-						>
+						<div v-if="currentStepIndex === 0" class="text-center text-muted-foreground py-4">
 							<p class="text-sm">Selecciona un proveedor para comenzar.</p>
 						</div>
 
 						<!-- Paso 1: Seleccionar Entradas (CORREGIDO) -->
 						<div v-if="currentStepIndex === 1" class="space-y-4">
-							<div
-								v-if="selectedGRs.length === 0"
-								class="text-center text-muted-foreground py-4"
-							>
+							<div v-if="selectedGRs.length === 0" class="text-center text-muted-foreground py-4">
 								<p class="text-sm">
 									Selecciona una o más entradas de mercancía para continuar.
 								</p>
@@ -745,9 +679,7 @@ const invoiceData = ref({
 										entrada(s) seleccionada(s)
 									</div>
 								</div>
-								<Button size="sm" class="w-full" @click="nextStep"
-									>Continuar →</Button
-								>
+								<Button size="sm" class="w-full" @click="nextStep">Continuar →</Button>
 							</div>
 						</div>
 						<!-- Paso 2: Subir Factura -->
@@ -768,19 +700,11 @@ const invoiceData = ref({
 								</p>
 							</div>
 							<div
-								class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors"
-							>
-								<input
-									type="file"
-									id="invoice-upload-pdf"
-									accept=".pdf"
-									class="sr-only"
-									@change="handlePdfUpload"
-								/>
+								class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
+								<input type="file" id="invoice-upload-pdf" accept=".pdf" class="sr-only"
+									@change="handlePdfUpload" />
 								<label for="invoice-upload-pdf" class="cursor-pointer">
-									<FileText
-										class="h-10 w-10 mx-auto mb-4 text-muted-foreground"
-									/>
+									<FileText class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
 									<p class="text-sm font-medium mb-1">
 										Haz clic para subir la factura (PDF)
 									</p>
@@ -788,66 +712,49 @@ const invoiceData = ref({
 								</label>
 							</div>
 							<div
-								class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors"
-							>
-								<input
-									type="file"
-									id="invoice-upload-xml"
-									accept=".xml"
-									class="sr-only"
-									@change="handleXmlUpload"
-								/>
+								class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
+								<input type="file" id="invoice-upload-xml" accept=".xml" class="sr-only"
+									@change="handleXmlUpload" />
 								<label for="invoice-upload-xml" class="cursor-pointer">
-									<FileCode
-										class="h-10 w-10 mx-auto mb-4 text-muted-foreground"
-									/>
+									<FileCode class="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
 									<p class="text-sm font-medium mb-1">
 										Haz clic para subir la factura (XML)
 									</p>
 									<p class="text-xs text-muted-foreground">XML hasta 10MB</p>
 								</label>
 							</div>
-							<div
-								v-if="selectedPdfFile"
-								class="flex items-center justify-between p-3 bg-muted rounded-lg"
-							>
+							<div v-if="selectedPdfFile"
+								class="flex items-center justify-between p-3 bg-muted rounded-lg">
 								<div class="flex items-center space-x-2">
 									<FileText class="h-4 w-4 text-muted-foreground" />
 									<span class="text-sm font-medium">{{
 										selectedPdfFile.name
 									}}</span>
-									<Badge variant="secondary" class="text-xs"
-										>{{ (selectedPdfFile.size / 1024 / 1024).toFixed(1) }} MB
+									<Badge variant="secondary" class="text-xs">{{ (selectedPdfFile.size / 1024 /
+										1024).toFixed(1) }}
+										MB
 									</Badge>
 								</div>
 								<Button variant="ghost" size="sm" @click="removePdfFile">✕</Button>
 							</div>
-							<div
-								v-if="selectedXmlFile"
-								class="flex items-center justify-between p-3 bg-muted rounded-lg"
-							>
+							<div v-if="selectedXmlFile"
+								class="flex items-center justify-between p-3 bg-muted rounded-lg">
 								<div class="flex items-center space-x-2">
 									<FileText class="h-4 w-4 text-muted-foreground" />
 									<span class="text-sm font-medium">{{
 										selectedXmlFile.name
 									}}</span>
-									<Badge variant="secondary" class="text-xs"
-										>{{ (selectedXmlFile.size / 1024 / 1024).toFixed(1) }} MB
+									<Badge variant="secondary" class="text-xs">{{ (selectedXmlFile.size / 1024 /
+										1024).toFixed(1) }}
+										MB
 									</Badge>
 								</div>
 								<Button variant="ghost" size="sm" @click="removeXmlFile">✕</Button>
 							</div>
 							<div class="flex space-x-2 pt-4">
-								<Button variant="outline" size="sm" class="flex-1" @click="prevStep"
-									>← Volver</Button
-								>
-								<Button
-									size="sm"
-									class="flex-1"
-									:disabled="!selectedPdfFile || !selectedXmlFile"
-									@click="nextStep"
-									>Continuar →</Button
-								>
+								<Button variant="outline" size="sm" class="flex-1" @click="prevStep">← Volver</Button>
+								<Button size="sm" class="flex-1" :disabled="!selectedPdfFile || !selectedXmlFile"
+									@click="nextStep">Continuar →</Button>
 							</div>
 						</div>
 						<!-- Paso 3: Datos de Factura -->
@@ -856,12 +763,8 @@ const invoiceData = ref({
 							<div class="space-y-3">
 								<div class="space-y-1">
 									<Label for="folio">Folio</Label>
-									<Input
-										id="folio"
-										type="text"
-										v-model="invoiceData.folio"
-										placeholder="Ej: F-12345"
-									/>
+									<Input id="folio" type="text" v-model="invoiceData.folio"
+										placeholder="Ej: F-12345" />
 								</div>
 								<div class="space-y-1">
 									<Label for="moneda">Moneda</Label>
@@ -871,42 +774,25 @@ const invoiceData = ref({
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
-											<SelectItem value="USD"
-												>USD - Dólar Americano</SelectItem
-											>
+											<SelectItem value="USD">USD - Dólar Americano</SelectItem>
 											<SelectItem value="EUR">EUR - Euro</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
 								<div class="space-y-1">
 									<Label for="importe">Importe Total</Label>
-									<Input
-										id="importe"
-										type="number"
-										v-model="invoiceData.importe"
-										placeholder="Ej: 1160.00"
-									/>
+									<Input id="importe" type="number" v-model="invoiceData.importe"
+										placeholder="Ej: 1160.00" />
 								</div>
 								<div class="space-y-1">
 									<Label for="sociedad">Sociedad</Label>
-									<Input
-										id="sociedad"
-										v-model="invoiceData.sociedad"
-										placeholder="Ej: 1000"
-									/>
+									<Input id="sociedad" v-model="invoiceData.sociedad" placeholder="Ej: 1000" />
 								</div>
 							</div>
 							<div class="flex space-x-2 pt-4">
-								<Button variant="outline" size="sm" class="flex-1" @click="prevStep"
-									>← Volver</Button
-								>
-								<Button
-									size="sm"
-									class="flex-1"
-									:disabled="!invoiceData.folio || !invoiceData.importe"
-									@click="nextStep"
-									>Continuar →</Button
-								>
+								<Button variant="outline" size="sm" class="flex-1" @click="prevStep">← Volver</Button>
+								<Button size="sm" class="flex-1" :disabled="!invoiceData.folio || !invoiceData.importe"
+									@click="nextStep">Continuar →</Button>
 							</div>
 						</div>
 						<!-- Paso 4: Confirmar -->
@@ -957,41 +843,19 @@ const invoiceData = ref({
 								</div>
 							</div>
 							<div class="flex space-x-2 pt-4">
-								<Button
-									variant="outline"
-									size="sm"
-									class="flex-1"
-									@click="prevStep"
-									:disabled="isSubmitting"
-								>
+								<Button variant="outline" size="sm" class="flex-1" @click="prevStep"
+									:disabled="isSubmitting">
 									← Volver
 								</Button>
-								<Button
-									size="sm"
-									class="flex-1"
-									@click="submitInvoice"
-									:disabled="isSubmitting"
-								>
-									<svg
-										v-if="isSubmitting"
-										class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
-									>
-										<circle
-											class="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											stroke-width="4"
-										></circle>
-										<path
-											class="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-										></path>
+								<Button size="sm" class="flex-1" @click="submitInvoice" :disabled="isSubmitting">
+									<svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+										xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+											stroke-width="4">
+										</circle>
+										<path class="opacity-75" fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+										</path>
 									</svg>
 									<span v-if="isSubmitting">Procesando...</span>
 									<span v-else>Confirmar Carga</span>

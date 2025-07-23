@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -87,44 +87,23 @@ const handleRegister = async () => {
 							<div class="grid gap-4">
 								<div class="grid gap-2">
 									<Label for="name">Nombre</Label>
-									<Input
-										id="name"
-										placeholder="Tu Nombre"
-										required
-										v-model="name"
-										:disabled="authStore.loading"
-									/>
+									<Input id="name" placeholder="Tu Nombre" required v-model="name"
+										:disabled="authStore.loading" />
 								</div>
 								<div class="grid gap-2">
 									<Label for="email">Email</Label>
-									<Input
-										id="email"
-										type="email"
-										placeholder="tu@email.com"
-										required
-										v-model="email"
-										:disabled="authStore.loading"
-									/>
+									<Input id="email" type="email" placeholder="tu@email.com" required v-model="email"
+										:disabled="authStore.loading" />
 								</div>
 								<div class="grid gap-2">
 									<Label for="password">Contraseña</Label>
-									<Input
-										id="password"
-										type="password"
-										required
-										v-model="password"
-										:disabled="authStore.loading"
-									/>
+									<Input id="password" type="password" required v-model="password"
+										:disabled="authStore.loading" />
 								</div>
 								<div class="grid gap-2">
 									<Label for="confirm-password">Confirmar Contraseña</Label>
-									<Input
-										id="confirm-password"
-										type="password"
-										required
-										v-model="confirmPassword"
-										:disabled="authStore.loading"
-									/>
+									<Input id="confirm-password" type="password" required v-model="confirmPassword"
+										:disabled="authStore.loading" />
 								</div>
 								<Button type="submit" class="w-full" :disabled="authStore.loading">
 									{{ authStore.loading ? 'Registrando...' : 'Registrar' }}
