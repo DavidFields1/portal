@@ -3,7 +3,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { useMutation } from '@tanstack/vue-query'
 import { AuthenticatedUserSchema, type AuthenticatedUser } from '@/schemas/authSchemas'
 import axiosInstance from '@/config/axiosInstance'
-// import { toast } from 'vue-sonner'
 
 export const credentialsSchema = z.object({
 	email: z.email('El email es obligatorio'),
