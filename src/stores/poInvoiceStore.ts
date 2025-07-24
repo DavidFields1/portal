@@ -4,7 +4,6 @@ import { toast } from 'vue-sonner'
 import {
 	type GoodsReceipt,
 	type PurchaseOrder,
-	type Supplier,
 	type Step,
 	type InvoiceData,
 	GoodsReceiptSchema,
@@ -12,7 +11,11 @@ import {
 	InvoiceDataSchema,
 } from '@/schemas/invoiceSchemas'
 import { UploadCloud, CheckCircle, FileText, Users, ClipboardList } from 'lucide-vue-next'
-import { SupplierSchema } from '@/schemas/invoiceSchemas'
+// import { SupplierSchema } from '@/schemas/invoiceSchemas'
+// import type { Provider } from '@/schemas/providerSchema'
+import { useProvidersQuery } from '@/composables/useProviders'
+import { ProviderSchema, type Provider } from '@/schemas/providerSchema'
+// import { ProvidersResponse } from '../schemas/providerSchema'
 
 export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	// Estado
@@ -21,7 +24,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_001',
 			number: 'OC-2024-055',
 			supplier: 'Proveedor A Tech',
-			supplierId: 'supp_A',
+			supplierId: 68,
 			supplierRfc: 'ATE123456XYZ',
 			date: '2024-05-01',
 			totalAmount: 850.25,
@@ -55,7 +58,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_003',
 			number: 'OC-2024-059',
 			supplier: 'Proveedor A Tech',
-			supplierId: 'supp_A',
+			supplierId: 68,
 			supplierRfc: 'ATE123456XYZ',
 			date: '2024-05-05',
 			totalAmount: 1102.5,
@@ -89,7 +92,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_002',
 			number: 'OC-2024-058',
 			supplier: 'Proveedor B Industrial',
-			supplierId: 'supp_B',
+			supplierId: 2,
 			supplierRfc: 'BIN456789ABC',
 			date: '2024-05-03',
 			totalAmount: 1200.0,
@@ -112,7 +115,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_004',
 			number: 'OC-2024-060',
 			supplier: 'Proveedor C Oficina',
-			supplierId: 'supp_C',
+			supplierId: 3,
 			supplierRfc: 'COF789123DEF',
 			date: '2024-05-06',
 			totalAmount: 300.0,
@@ -135,7 +138,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_005',
 			number: 'OC-2024-061',
 			supplier: 'Proveedor C Oficina',
-			supplierId: 'supp_C',
+			supplierId: 3,
 			supplierRfc: 'COF789123DEF',
 			date: '2024-05-08',
 			totalAmount: 150.0,
@@ -158,7 +161,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			id: 'po_006',
 			number: 'OC-2024-062',
 			supplier: 'Proveedor D Logística',
-			supplierId: 'supp_D',
+			supplierId: 4,
 			supplierRfc: 'DLO012345GHI',
 			date: '2024-05-10',
 			totalAmount: 2500.0,
@@ -188,7 +191,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	])
 
 	const currentStepIndex = ref(0)
-	const selectedSupplierId = ref<string | null>(null)
+	const selectedSupplierId = ref<number | null>(null)
 	const selectedPOId = ref<string | null>(null)
 	const selectedGRs = ref<GoodsReceipt[]>([] as GoodsReceipt[])
 	const currentSupplierName = ref<string | null>(null)
@@ -204,22 +207,24 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	})
 
 	// Getters computados
-	const allSuppliers = computed<Supplier[]>(() => {
-		const suppliers = new Map<string, Supplier>()
-		purchaseOrders.value.forEach((po: PurchaseOrder) => {
-			if (!suppliers.has(po.supplierId)) {
-				suppliers.set(po.supplierId, {
-					id: po.supplierId,
-					name: po.supplier,
-					rfc: po.supplierRfc,
-				})
-			}
-		})
-		return Array.from(suppliers.values())
+	// const allSuppliers = computed<Provider[]>(() => {
+	// 	const suppliers = new Map<string, Supplier>()
+	// 	purchaseOrders.value.forEach((po: PurchaseOrder) => {
+	// 		if (!suppliers.has(po.supplierId)) {
+	// 			suppliers.set(po.supplierId, {
+	// 				id: po.supplierId,
+	// 				name: po.supplier,
+	// 				rfc: po.supplierRfc,
+	// 			})
+	// 		}
+	// 	})
+	const providersQuery = useProvidersQuery()
+	const allProviders = computed<Provider[]>(() => {
+		return providersQuery.data.value?.object.content ?? []
 	})
 
 	const filteredPurchaseOrders = computed<PurchaseOrder[]>(() => {
-		if (!selectedSupplierId.value) return []
+		if (selectedSupplierId.value === null) return []
 		return purchaseOrders.value.filter(
 			(po: PurchaseOrder) => po.supplierId === selectedSupplierId.value,
 		)
@@ -269,13 +274,13 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	})
 
 	// Actions
-	const selectSupplier = (supplier: Supplier) => {
+	const selectSupplier = (provider: Provider) => {
 		try {
-			const validatedSupplier = SupplierSchema.parse(supplier)
-			selectedSupplierId.value = validatedSupplier.id
-			currentSupplierName.value = validatedSupplier.name
+			const validatedSupplier = ProviderSchema.parse(provider)
+			selectedSupplierId.value = validatedSupplier.id_proveedor
+			currentSupplierName.value = validatedSupplier.nombre_razon_social
 			currentStepIndex.value = 1
-			toast.success(`Proveedor seleccionado: ${validatedSupplier.name}`)
+			toast.success(`Proveedor seleccionado: ${validatedSupplier.nombre_razon_social}`)
 		} catch (error) {
 			toast.error('Error al seleccionar proveedor')
 			console.error('Invalid supplier data:', error)
@@ -507,8 +512,10 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		invoiceData,
 		isSubmitting,
 
+		allProviders,
+		allProvidersLoading: providersQuery.isPending,
+
 		// Getters
-		allSuppliers,
 		filteredPurchaseOrders,
 		selectedPO,
 		totalSelectedAmount,

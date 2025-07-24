@@ -1,4 +1,3 @@
-// src/schemas/auth.ts
 import { z } from 'zod'
 
 export const ModuloSchema = z.object({

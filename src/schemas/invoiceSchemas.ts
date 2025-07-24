@@ -16,7 +16,7 @@ export const PurchaseOrderSchema = z.object({
 	id: z.string(),
 	number: z.string(),
 	supplier: z.string(),
-	supplierId: z.string(),
+	supplierId: z.number(),
 	supplierRfc: z.string(),
 	date: z.string(),
 	totalAmount: z.number().min(0),
@@ -25,7 +25,7 @@ export const PurchaseOrderSchema = z.object({
 })
 
 export const SupplierSchema = z.object({
-	id: z.string(),
+	id: z.number(),
 	name: z.string(),
 	rfc: z.string(),
 })

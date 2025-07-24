@@ -14,13 +14,19 @@ import {
 } from '@/components/ui/command'
 import { ChevronsUpDown, Check } from 'lucide-vue-next'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
-import type { Supplier } from '@/schemas/invoiceSchemas'
+// import type { Supplier } from '@/schemas/invoiceSchemas'
+import type { Provider } from '@/schemas/providerSchema'
 
-const invoiceStore = usePOInvoiceStore()
+const invoiceStore = usePOInvoiceStore();
+// const { allProviders } = invoiceStore;
+// console.log(invoiceStore.allProviders)
+
+
+
 const isSupplierPopoverOpen = ref(false)
 
-const handleSupplierSelect = (supplier: Supplier) => {
-  invoiceStore.selectSupplier(supplier)
+const handleSupplierSelect = (provider: Provider) => {
+  invoiceStore.selectSupplier(provider)
   isSupplierPopoverOpen.value = false
 }
 </script>
@@ -48,13 +54,14 @@ const handleSupplierSelect = (supplier: Supplier) => {
               <CommandList>
                 <CommandEmpty>No se encontró el proveedor.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem v-for="supplier in invoiceStore.allSuppliers" :key="supplier.id" :value="supplier.name"
-                    @select="() => handleSupplierSelect(supplier)" class="flex items-center">
+                  <CommandItem v-for="provider in invoiceStore.allProviders" :key="provider.id_proveedor"
+                    :value="provider.nombre_razon_social" @select="() => handleSupplierSelect(provider)"
+                    class="flex items-center">
                     <Check class="mr-2 h-4 w-4"
-                      :class="invoiceStore.selectedSupplierId === supplier.id ? 'opacity-100' : 'opacity-0'" />
+                      :class="invoiceStore.selectedSupplierId === provider.id_proveedor ? 'opacity-100' : 'opacity-0'" />
                     <div class="flex flex-col">
-                      <span>{{ supplier.name }}</span>
-                      <span class="text-xs text-muted-foreground">{{ supplier.rfc }}</span>
+                      <span>{{ provider.nombre_razon_social }}</span>
+                      <span class="text-xs text-muted-foreground">{{ provider.rfc }}</span>
                     </div>
                   </CommandItem>
                 </CommandGroup>
