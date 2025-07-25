@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import {
 	type GoodsReceipt,
-	type PurchaseOrder,
 	type Step,
 	type InvoiceData,
 	GoodsReceiptSchema,
@@ -15,172 +14,11 @@ import { UploadCloud, CheckCircle, FileText, Users, ClipboardList } from 'lucide
 // import type { Provider } from '@/schemas/providerSchema'
 import { useProvidersQuery } from '@/composables/useProviders'
 import { ProviderSchema, type Provider } from '@/schemas/providerSchema'
-// import { ProvidersResponse } from '../schemas/providerSchema'
+import type { PurchaseOrder } from '@/schemas/purchaseOrder'
+import { useOrdenesCompraSAPQuery } from '@/composables/useCatalogoSAP'
 
 export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	// Estado
-	const purchaseOrders = ref<PurchaseOrder[]>([
-		{
-			id: 'po_001',
-			number: 'OC-2024-055',
-			supplier: 'Proveedor A Tech',
-			supplierId: 68,
-			supplierRfc: 'ATE123456XYZ',
-			date: '2024-05-01',
-			totalAmount: 850.25,
-			status: 'Cerrada Parcialmente',
-			goodsReceipts: [
-				{
-					id: 'gr_101',
-					number: 'EM-101A',
-					material: 'Laptop Pro 15"',
-					iva: 80.04,
-					date: '2024-05-10',
-					amount: 500.25,
-					itemCount: 5,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-055',
-				},
-				{
-					id: 'gr_102',
-					number: 'EM-102A',
-					material: 'Mouse Inalámbrico',
-					iva: 56.0,
-					date: '2024-05-12',
-					amount: 350.0,
-					itemCount: 1,
-					status: 'Facturado',
-					poNumber: 'OC-2024-055',
-				},
-			],
-		},
-		{
-			id: 'po_003',
-			number: 'OC-2024-059',
-			supplier: 'Proveedor A Tech',
-			supplierId: 68,
-			supplierRfc: 'ATE123456XYZ',
-			date: '2024-05-05',
-			totalAmount: 1102.5,
-			status: 'Abierta',
-			goodsReceipts: [
-				{
-					id: 'gr_301',
-					number: 'EM-301A',
-					material: 'Monitor 4K',
-					iva: 96.4,
-					date: '2024-05-14',
-					amount: 602.5,
-					itemCount: 10,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-059',
-				},
-				{
-					id: 'gr_302',
-					number: 'EM-302A',
-					material: 'Teclado Mecánico',
-					iva: 80.0,
-					date: '2024-05-15',
-					amount: 500.0,
-					itemCount: 8,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-059',
-				},
-			],
-		},
-		{
-			id: 'po_002',
-			number: 'OC-2024-058',
-			supplier: 'Proveedor B Industrial',
-			supplierId: 2,
-			supplierRfc: 'BIN456789ABC',
-			date: '2024-05-03',
-			totalAmount: 1200.0,
-			status: 'Abierta',
-			goodsReceipts: [
-				{
-					id: 'gr_201',
-					number: 'EM-201B',
-					material: 'Torno CNC',
-					iva: 192.0,
-					date: '2024-05-11',
-					amount: 1200.0,
-					itemCount: 1,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-058',
-				},
-			],
-		},
-		{
-			id: 'po_004',
-			number: 'OC-2024-060',
-			supplier: 'Proveedor C Oficina',
-			supplierId: 3,
-			supplierRfc: 'COF789123DEF',
-			date: '2024-05-06',
-			totalAmount: 300.0,
-			status: 'Cerrada',
-			goodsReceipts: [
-				{
-					id: 'gr_401',
-					number: 'EM-401C',
-					material: 'Sillas de Oficina',
-					iva: 48.0,
-					date: '2024-05-16',
-					amount: 300.0,
-					itemCount: 25,
-					status: 'Facturado',
-					poNumber: 'OC-2024-060',
-				},
-			],
-		},
-		{
-			id: 'po_005',
-			number: 'OC-2024-061',
-			supplier: 'Proveedor C Oficina',
-			supplierId: 3,
-			supplierRfc: 'COF789123DEF',
-			date: '2024-05-08',
-			totalAmount: 150.0,
-			status: 'Abierta',
-			goodsReceipts: [
-				{
-					id: 'gr_501',
-					number: 'EM-501C',
-					material: 'Papel Bond (Caja)',
-					iva: 24.0,
-					date: '2024-05-18',
-					amount: 150.0,
-					itemCount: 50,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-061',
-				},
-			],
-		},
-		{
-			id: 'po_006',
-			number: 'OC-2024-062',
-			supplier: 'Proveedor D Logística',
-			supplierId: 4,
-			supplierRfc: 'DLO012345GHI',
-			date: '2024-05-10',
-			totalAmount: 2500.0,
-			status: 'Abierta',
-			goodsReceipts: [
-				{
-					id: 'gr_601',
-					number: 'EM-601D',
-					material: 'Servicio de Flete Nacional',
-					iva: 400.0,
-					date: '2024-05-20',
-					amount: 2500.0,
-					itemCount: 1,
-					status: 'Pendiente de Factura',
-					poNumber: 'OC-2024-062',
-				},
-			],
-		},
-	] as PurchaseOrder[])
 
 	const steps = ref<Step[]>([
 		{ id: 'select_supplier', name: 'Seleccionar Proveedor', icon: Users },
@@ -223,15 +61,19 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		return providersQuery.data.value?.object.content ?? []
 	})
 
+	const selectedSupplierRfc = ref<string>('')
+
+	// const purchaseOrders = ref<PurchaseOrder[]>([])
+
 	const filteredPurchaseOrders = computed<PurchaseOrder[]>(() => {
 		if (selectedSupplierId.value === null) return []
 		return purchaseOrders.value.filter(
-			(po: PurchaseOrder) => po.supplierId === selectedSupplierId.value,
+			(po: PurchaseOrder) => Number(po.NoProveedor) === selectedSupplierId.value,
 		)
 	})
 
 	const selectedPO = computed<PurchaseOrder | undefined>(() =>
-		purchaseOrders.value.find((po: PurchaseOrder) => po.id === selectedPOId.value),
+		purchaseOrders.value.find((po: PurchaseOrder) => po.NoProveedor === selectedPOId.value),
 	)
 
 	const totalSelectedAmount = computed<number>(() =>
@@ -272,13 +114,53 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			return {}
 		}
 	})
+	console.log('Component Setup: Calling useOrdenesCompraSAPQuery')
+	const purchaseOrdersQuery = useOrdenesCompraSAPQuery(
+		// Le pasamos los refs directamente
+		selectedSupplierId,
+		selectedSupplierRfc,
+		// Y le pasamos la opción 'enabled' para controlar cuándo se ejecuta
+		{
+			enabled: computed(() => {
+				const isEnabled = !!selectedSupplierId.value && !!selectedSupplierRfc.value
+				// LOG: Estado de 'enabled'
+				console.log(
+					`Enabled computed: ${isEnabled} (id: ${selectedSupplierId.value}, rfc: ${selectedSupplierRfc.value})`,
+				)
+				return isEnabled
+			}),
+		},
+	)
+	const purchaseOrders = computed(() => purchaseOrdersQuery.data.value?.object.content || [])
+
+	watch(purchaseOrdersQuery.isFetching, (newVal) => {
+		if (newVal) {
+			console.log('Query State: isFetching changed to TRUE')
+		} else {
+			console.log('Query State: isFetching changed to FALSE')
+		}
+	})
+	watch([selectedSupplierId, selectedSupplierRfc], ([newId, newRfc], [oldId, oldRfc]) => {
+		console.log(
+			`Selected Supplier Refs changed: ID from ${oldId} to ${newId}, RFC from ${oldRfc} to ${newRfc}`,
+		)
+	})
 
 	// Actions
 	const selectSupplier = (provider: Provider) => {
+		console.log('selectSupplier function called')
 		try {
 			const validatedSupplier = ProviderSchema.parse(provider)
+			console.log(
+				`selectSupplier: Setting ID to ${validatedSupplier.id_proveedor}, RFC to ${validatedSupplier.rfc}`,
+			)
+
 			selectedSupplierId.value = validatedSupplier.id_proveedor
+			selectedSupplierRfc.value = validatedSupplier.rfc
 			currentSupplierName.value = validatedSupplier.nombre_razon_social
+
+			console.log('selectSupplier: Refs updated.')
+
 			currentStepIndex.value = 1
 			toast.success(`Proveedor seleccionado: ${validatedSupplier.nombre_razon_social}`)
 		} catch (error) {
@@ -297,7 +179,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	}
 
 	const selectPO = (poId: string) => {
-		const po = purchaseOrders.value.find((p: PurchaseOrder) => p.id === poId)
+		const po = purchaseOrders.value.find((p: PurchaseOrder) => p.NoProveedor === poId)
 		if (!po) {
 			toast.error('Orden de compra no encontrada')
 			return
@@ -306,7 +188,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		try {
 			PurchaseOrderSchema.parse(po)
 			selectedPOId.value = poId
-			toast.success(`Orden seleccionada: ${po.number}`)
+			toast.success(`Orden seleccionada: ${po.DocumentoCompras}`)
 		} catch (error) {
 			toast.error('Datos de orden de compra inválidos')
 			console.error('Invalid PO data:', error)

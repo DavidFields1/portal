@@ -330,18 +330,18 @@ onUnmounted(() => {
 				<div class="border-t border-border p-4">
 					<div v-if="!sidebarCollapsed || isMobile" class="flex w-full items-center justify-between gap-3">
 						<div class="flex items-center gap-3 overflow-hidden">
-							<img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.name"
+							<img v-if="user?.imagen_perfil" :src="user.imagen_perfil" :alt="user.nombre"
 								class="h-8 w-8 rounded-full shrink-0" />
 							<div v-else
 								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-								{{ getInitials(user?.name) }}
+								{{ getInitials(user?.nombre) }}
 							</div>
 							<div class="flex flex-1 flex-col text-left overflow-hidden">
 								<span class="truncate font-semibold">{{
-									user?.name || 'Usuario'
+									user?.nombre || 'Usuario'
 								}}</span>
 								<span class="truncate text-xs text-muted-foreground">{{
-									user?.email
+									user?.email_address
 								}}</span>
 							</div>
 						</div>
@@ -352,11 +352,11 @@ onUnmounted(() => {
 						</Button>
 					</div>
 					<div v-else class="flex flex-col items-center gap-4">
-						<img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.name"
+						<img v-if="user?.imagen_perfil" :src="user.imagen_perfil" :alt="user.nombre"
 							class="h-8 w-8 rounded-full shrink-0" />
 						<div v-else
 							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-							{{ getInitials(user?.name) }}
+							{{ getInitials(user?.nombre) }}
 						</div>
 						<Button variant="ghost" size="icon"
 							class="h-8 w-8 shrink-0 transition-colors hover:text-destructive cursor-pointer"

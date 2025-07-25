@@ -86,17 +86,17 @@ const handleSupplierSelect = (provider: Provider) => {
         </div>
       </CardHeader>
       <CardContent class="space-y-2 max-h-[60vh] overflow-y-auto">
-        <Button v-for="po in invoiceStore.filteredPurchaseOrders" :key="po.id" variant="ghost"
+        <Button v-for="po in invoiceStore.filteredPurchaseOrders" :key="po.DocumentoCompras" variant="ghost"
           class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm" :class="{
-            'bg-accent border-l-4 border-l-primary': invoiceStore.selectedPOId === po.id,
-          }" @click="invoiceStore.selectPO(po.id)">
+            'bg-accent border-l-4 border-l-primary': invoiceStore.selectedPOId === po.DocumentoCompras,
+          }" @click="invoiceStore.selectPO(po.DocumentoCompras)">
           <div class="flex w-full justify-between items-center">
-            <span class="font-semibold text-sm">{{ po.number }}</span>
-            <Badge variant="outline" class="text-xs">{{ po.status }}</Badge>
+            <span class="font-semibold text-sm">{{ po.DocumentoCompras }}</span>
+            <Badge variant="outline" class="text-xs">{{ po.Rfc }}</Badge>
           </div>
           <div class="flex w-full justify-between text-xs text-muted-foreground mt-1">
-            <span>{{ po.date }}</span>
-            <span class="font-mono">{{ invoiceStore.formatCurrency(po.totalAmount) }}</span>
+            <span>{{ po.Sociedad }}</span>
+            <span class="font-mono">{{ invoiceStore.formatCurrency(Number(po.Monto)) }}</span>
           </div>
         </Button>
       </CardContent>
