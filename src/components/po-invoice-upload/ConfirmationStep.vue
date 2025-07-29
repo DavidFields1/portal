@@ -7,7 +7,7 @@ const invoiceStore = usePOInvoiceStore()
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-2">
     <h4 class="font-semibold">Confirmación Final</h4>
     <div class="space-y-3 text-sm">
       <div class="flex justify-between">
@@ -20,7 +20,7 @@ const invoiceStore = usePOInvoiceStore()
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Total Seleccionado:</span>
-        <span class="font-semibold">{{ invoiceStore.formatCurrency(invoiceStore.totalSelectedAmount) }}</span>
+        <span class="font-semibold">{{ invoiceStore.invoiceData.moneda }} {{ invoiceStore.totalSelectedAmount }}</span>
       </div>
       <Separator />
       <div class="flex justify-between">
@@ -29,7 +29,15 @@ const invoiceStore = usePOInvoiceStore()
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Archivo XML:</span>
-        <span class="font-medium">{{ invoiceStore.selectedXmlFile?.name }}</span>
+        <span class="font-medium">
+          {{
+            invoiceStore.selectedXmlFile?.name
+              ? invoiceStore.selectedXmlFile.name.length > 30
+                ? invoiceStore.selectedXmlFile.name.slice(0, 30) + '...'
+                : invoiceStore.selectedXmlFile.name
+              : ''
+          }}
+        </span>
       </div>
       <Separator />
       <div class="flex justify-between">
@@ -42,7 +50,7 @@ const invoiceStore = usePOInvoiceStore()
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Importe:</span>
-        <span class="font-semibold">{{ invoiceStore.formatCurrency(invoiceStore.invoiceData.importe || 0) }}</span>
+        <span class="font-semibold">{{ invoiceStore.invoiceData.importe }}</span>
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Sociedad:</span>

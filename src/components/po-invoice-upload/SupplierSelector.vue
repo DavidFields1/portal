@@ -12,16 +12,13 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { ChevronsUpDown, Check } from 'lucide-vue-next'
+import { ChevronsUpDown, Check, OctagonXIcon } from 'lucide-vue-next'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
-// import type { Supplier } from '@/schemas/invoiceSchemas'
 import type { Provider } from '@/schemas/providerSchema'
+import Label from '../ui/label/Label.vue'
+import PurchaseOrderSkeleton from '../skeleton/PurchaseOrderSkeleton.vue'
 
 const invoiceStore = usePOInvoiceStore();
-// const { allProviders } = invoiceStore;
-// console.log(invoiceStore.allProviders)
-
-
 
 const isSupplierPopoverOpen = ref(false)
 
@@ -58,7 +55,7 @@ const handleSupplierSelect = (provider: Provider) => {
                     :value="provider.nombre_razon_social" @select="() => handleSupplierSelect(provider)"
                     class="flex items-center">
                     <Check class="mr-2 h-4 w-4"
-                      :class="invoiceStore.selectedSupplierId === provider.id_proveedor ? 'opacity-100' : 'opacity-0'" />
+                      :class="invoiceStore.selectedSupplierId === provider.id_proveedor_sap ? 'opacity-100' : 'opacity-0'" />
                     <div class="flex flex-col">
                       <span>{{ provider.nombre_razon_social }}</span>
                       <span class="text-xs text-muted-foreground">{{ provider.rfc }}</span>
@@ -78,7 +75,7 @@ const handleSupplierSelect = (provider: Provider) => {
         <div class="flex justify-between items-center">
           <div>
             <CardTitle>Órdenes de Compra</CardTitle>
-            <CardDescription>{{ invoiceStore.currentSupplierName }}</CardDescription>
+            <CardDescription class="my-2">{{ invoiceStore.currentSupplierName }}</CardDescription>
           </div>
           <Button variant="outline" size="sm" @click="invoiceStore.resetSupplierSelection">
             Cambiar
@@ -86,19 +83,39 @@ const handleSupplierSelect = (provider: Provider) => {
         </div>
       </CardHeader>
       <CardContent class="space-y-2 max-h-[60vh] overflow-y-auto">
-        <Button v-for="po in invoiceStore.filteredPurchaseOrders" :key="po.DocumentoCompras" variant="ghost"
-          class="w-full justify-start text-left h-auto flex-col items-start p-3 hover:shadow-sm" :class="{
-            'bg-accent border-l-4 border-l-primary': invoiceStore.selectedPOId === po.DocumentoCompras,
-          }" @click="invoiceStore.selectPO(po.DocumentoCompras)">
-          <div class="flex w-full justify-between items-center">
-            <span class="font-semibold text-sm">{{ po.DocumentoCompras }}</span>
-            <Badge variant="outline" class="text-xs">{{ po.Rfc }}</Badge>
-          </div>
-          <div class="flex w-full justify-between text-xs text-muted-foreground mt-1">
-            <span>{{ po.Sociedad }}</span>
-            <span class="font-mono">{{ invoiceStore.formatCurrency(Number(po.Monto)) }}</span>
-          </div>
-        </Button>
+        <div v-if="invoiceStore.purchaseOrdersQuery.isFetching">
+          <PurchaseOrderSkeleton />
+        </div>
+        <div v-else-if="!invoiceStore.purchaseOrdersQuery.isPending && invoiceStore.purchaseOrders.length > 0">
+          <Button v-for="po in invoiceStore.purchaseOrders" :key="po.DocumentoCompras" variant="ghost"
+            class="w-full justify-start text-left h-auto flex-col items-start p-3 cursor-pointer hover:shadow-sm"
+            :class="{
+              'bg-accent border-l-4 border-l-primary': invoiceStore.selectedPOId === po.DocumentoCompras,
+            }" @click="invoiceStore.selectPO(po.DocumentoCompras)">
+            <!-- <div class="text-center w-full" v-if="po.Moneda === 'MXN'">
+              <span class="italic text-secondary-foreground">Pedido Nacional</span>
+            </div> -->
+            <div class="flex w-full justify-between items-center">
+              <div>
+                <Label class="font-light text-sm">Orden Compra </Label>
+                <span class="font-semibold text-sm">{{ po.DocumentoCompras }}</span>
+              </div>
+              <Badge v-if="po.CondPago" variant="outline" class="text-xs">Sociedad {{ po.Sociedad }}</Badge>
+            </div>
+            <div class="flex w-full justify-between text-xs text-muted-foreground mt-1 items-baseline">
+              <div class="flex gap-2 font-semibold text-base text-green-700">
+                <span class="font-mono"> {{ po.Moneda }}</span>
+                <span class="font-mono"> {{ po.Monto }}</span>
+              </div>
+              <span>{{ po.FechaCreacion }}</span>
+            </div>
+          </Button>
+        </div>
+        <div v-else class="text-center py-8 text-muted-foreground">
+          <OctagonXIcon class="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p class="text-lg font-medium">El Proveedor seleccionado</p>
+          <p class="text-sm">no cuenta con Ordenes de Compra</p>
+        </div>
       </CardContent>
     </template>
   </Card>

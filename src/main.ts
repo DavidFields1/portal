@@ -1,16 +1,16 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 
-import App from './App.vue'
-import router from './router'
-import './assets/main.css'
-import { useAuthStore } from './stores/authStore'
+import App from './App.vue';
+import router from './router';
+import './assets/main.css';
+import { useAuthStore } from './stores/authStore';
 
-const app = createApp(App)
-const pinia = createPinia()
+const app = createApp(App);
+const pinia = createPinia();
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
 			staleTime: 1000 * 60 * 3,
@@ -20,11 +20,11 @@ const queryClient = new QueryClient({
 			retry: 0,
 		},
 	},
-})
+});
 
-app.use(pinia)
-app.use(router)
-app.use(VueQueryPlugin, { queryClient })
-useAuthStore(pinia).loadFromStorage()
+app.use(pinia);
+app.use(router);
+app.use(VueQueryPlugin, { queryClient });
+useAuthStore(pinia).loadFromStorage();
 
-app.mount('#app')
+app.mount('#app');

@@ -46,7 +46,7 @@ watchEffect(() => {
     <h1 class="mb-6 text-2xl font-bold md:text-3xl">Carga de Factura con OC</h1>
     <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
       <!-- COLUMNA IZQUIERDA: Selección de Proveedor y OC -->
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-3" :class="{ 'opacity-60 pointer-events-none': invoiceStore.isSelectionLocked }">
         <SupplierSelector />
       </div>
 

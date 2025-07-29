@@ -38,7 +38,7 @@ const invoiceStore = usePOInvoiceStore()
       </nav>
     </CardHeader>
     <Separator />
-    <CardContent class="mt-4">
+    <CardContent>
       <!-- Paso 0: Seleccionar Proveedor -->
       <div v-if="invoiceStore.currentStepIndex === 0" class="text-center text-muted-foreground py-4">
         <p class="text-sm">Selecciona un proveedor para comenzar.</p>

@@ -2,9 +2,14 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { X } from 'lucide-vue-next'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
+import Table from '../ui/table/Table.vue'
+import TableHeader from '../ui/table/TableHeader.vue'
+import TableRow from '../ui/table/TableRow.vue'
+import TableHead from '../ui/table/TableHead.vue'
+import TableBody from '../ui/table/TableBody.vue'
+import TableCell from '../ui/table/TableCell.vue'
 
 const invoiceStore = usePOInvoiceStore()
 </script>
@@ -18,24 +23,43 @@ const invoiceStore = usePOInvoiceStore()
       </CardTitle>
     </CardHeader>
     <CardContent>
-      <div class="space-y-2 mb-4">
-        <div v-for="gr in invoiceStore.selectedGRs" :key="gr.id"
-          class="flex justify-between items-center text-sm p-2 rounded-md hover:bg-muted/50">
-          <div class="flex-1 min-w-0">
-            <p class="font-medium truncate">{{ gr.number }} - {{ gr.material }}</p>
-            <p class="font-mono text-xs text-muted-foreground">
-              {{ invoiceStore.formatCurrency(gr.amount) }}
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="invoiceStore.removeSelectedGR(gr.id)">
-            <X class="h-4 w-4" />
-          </Button>
-        </div>
+      <!-- <div class=""> -->
+      <div class="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead class="w-[50px] py-2 px-3">
+                <!-- Columna para el botón de acción -->
+              </TableHead>
+              <TableHead class="py-2 px-3">Material</TableHead>
+              <TableHead class="py-2 px-3">Unidades</TableHead>
+              <TableHead class="text-right py-2 px-3">Importe</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <template v-if="invoiceStore.selectedGRs && invoiceStore.selectedGRs.length > 0">
+              <TableRow v-for="gr in invoiceStore.selectedGRs" :key="gr.DocMaterial">
+                <TableCell class="py-2 px-3">
+                  <Button variant="ghost" size="icon" class="h-7 w-7 hover:text-red-600"
+                    @click="invoiceStore.removeSelectedGR(gr.DocMaterial)">
+                    <X class="h-4 w-4" />
+                  </Button>
+                </TableCell>
+                <TableCell class="font-medium py-2 px-3">
+                  {{ gr.Material }}
+                </TableCell>
+                <TableCell class="py-2 px-3">{{ gr.Cantidad }}</TableCell>
+                <TableCell class="text-right py-2 px-3">
+                  {{ gr.ImporteMl }}
+                </TableCell>
+              </TableRow>
+            </template>
+          </TableBody>
+        </Table>
       </div>
-      <Separator class="my-3" />
-      <div class="flex justify-between items-center font-semibold">
+      <div class="flex justify-between items-center font-semibold px-2 mt-3">
         <span>Total Seleccionado:</span>
-        <span class="text-lg">{{ invoiceStore.formatCurrency(invoiceStore.totalSelectedAmount) }}</span>
+        <span class="text-lg"> {{ invoiceStore.selectedPO?.Moneda }} {{ invoiceStore.totalSelectedAmount }}</span>
       </div>
     </CardContent>
   </Card>
