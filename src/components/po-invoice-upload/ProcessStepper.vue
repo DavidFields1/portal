@@ -63,13 +63,13 @@ const invoiceStore = usePOInvoiceStore()
         <FileUploadSection />
       </div>
 
-      <!-- Paso 3: Datos de Factura -->
-      <div v-if="invoiceStore.currentStepIndex === 3">
+      <!-- Paso 3: Datos de Factura (solo si la moneda no es MXN) -->
+      <div v-if="invoiceStore.currentStepIndex === 3 && invoiceStore.isInvoiceDataStep">
         <InvoiceDataForm />
       </div>
 
-      <!-- Paso 4: Confirmar -->
-      <div v-if="invoiceStore.currentStepIndex === 4">
+      <!-- Paso 4: Confirmar (puede ser el paso 3 o 4 dependiendo de si existe el paso de datos) -->
+      <div v-if="invoiceStore.currentStepIndex === invoiceStore.steps.length - 1">
         <ConfirmationStep />
       </div>
     </CardContent>

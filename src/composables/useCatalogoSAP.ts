@@ -1,6 +1,7 @@
 import axiosInstance from '@/config/axiosInstance';
 import { GoodsReceiptResponseSchema, type GoodsReceiptResponse } from '@/schemas/goodReceiptSchema';
 import { PurchaseOrderResponseSchema, type PurchaseOrderResponse } from '@/schemas/purchaseOrder';
+import { SocietyResponseSchema, type SocietyResponse } from '@/schemas/societySchema';
 import { useQuery, type UseQueryOptions } from '@tanstack/vue-query';
 import { type Ref, toValue } from 'vue';
 
@@ -59,6 +60,24 @@ export function useEntradasMercanciaSAPQuery(
 			});
 
 			const parsedData = GoodsReceiptResponseSchema.parse(data);
+
+			return parsedData;
+		},
+		refetchOnMount: false,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
+		retry: false,
+		...options,
+	});
+}
+
+export function useSociedadesSAPQuery(options: UseOrdenesCompraSAPQueryOptions = {}) {
+	return useQuery<SocietyResponse, Error>({
+		queryKey: ['sociedades'],
+		queryFn: async () => {
+			const { data } = await axiosInstance.get('/catalogo-sap/sociedades');
+
+			const parsedData = SocietyResponseSchema.parse(data);
 
 			return parsedData;
 		},

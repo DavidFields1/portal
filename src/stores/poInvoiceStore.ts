@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
-// import { type Step, type InvoiceData, InvoiceDataSchema } from '@/schemas/invoiceSchemas';
 import { UploadCloud, FileText, Users, ClipboardList, ListIcon } from 'lucide-vue-next';
 import { useProvidersQuery } from '@/composables/useProviders';
 import { ProviderSchema, type Provider } from '@/schemas/providerSchema';
@@ -18,16 +17,34 @@ import { InvoiceDataSchema, type InvoiceData, type Step } from '@/schemas/invoic
 import axiosInstance from '@/config/axiosInstance';
 import { ValidateRfcResponseSchema, type ValidateRfcResponse } from '@/schemas/validateRfc';
 import { queryClient } from '@/main';
+import { useAuthStore } from './authStore';
 
 export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	// Estado
-	const steps = ref<Step[]>([
+	const allSteps = ref<Step[]>([
 		{ id: 'select_supplier', name: 'Seleccionar Proveedor', icon: Users },
 		{ id: 'select_gr', name: 'Seleccionar Entradas', icon: ListIcon },
 		{ id: 'upload_invoice', name: 'Subir Factura', icon: UploadCloud },
 		{ id: 'invoice_data', name: 'Datos de Factura', icon: ClipboardList },
 		{ id: 'confirm', name: 'Confirmar', icon: FileText },
 	]);
+
+	// Pasos dinámicos basados en la moneda
+	const steps = computed<Step[]>(() => {
+		const baseSteps = [
+			allSteps.value[0], // select_supplier
+			allSteps.value[1], // select_gr
+			allSteps.value[2], // upload_invoice
+		];
+
+		// Solo agregar el paso de datos de factura si la moneda no es MXN
+		if (invoiceData.value.moneda !== 'MXN') {
+			baseSteps.push(allSteps.value[3]); // invoice_data
+		}
+
+		baseSteps.push(allSteps.value[4]); // confirm
+		return baseSteps;
+	});
 
 	const currentStepIndex = ref(0);
 	const selectedSupplierId = ref<string | null>(null);
@@ -45,8 +62,44 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		sociedad: '',
 	});
 
+	const invoiceExtractedData = ref<unknown | null>(null);
+
 	const xmlValidationStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
 	const xmlValidationError = ref<string | null>(null);
+
+	const authStore = useAuthStore();
+
+	// Detectar si el usuario es un proveedor y configurar automáticamente
+	const isUserProvider = computed(() => {
+		return authStore.user?.proveedor !== null && authStore.user?.proveedor !== undefined;
+	});
+
+	const userProvider = computed(() => {
+		return authStore.user?.proveedor;
+	});
+
+	// Auto-configurar proveedor si el usuario es un proveedor
+	const autoConfigureProvider = () => {
+		if (isUserProvider.value && userProvider.value) {
+			const provider: Provider = {
+				usuario: null,
+				id_proveedor: userProvider.value.id_proveedor,
+				id_usuario: userProvider.value.id_usuario,
+				id_proveedor_sap: userProvider.value.id_proveedor_sap,
+				id_bloqueo: userProvider.value.id_bloqueo,
+				nombre_razon_social: userProvider.value.nombre_razon_social,
+				rfc: userProvider.value.rfc,
+				pais_clave: userProvider.value.pais_clave,
+				file_path: userProvider.value.file_path,
+				fecha_creacion: userProvider.value.fecha_creacion,
+				fecha_modificacion: userProvider.value.fecha_modificacion,
+			};
+
+			selectSupplier(provider);
+			// Saltar al siguiente paso automáticamente
+			currentStepIndex.value = 1;
+		}
+	};
 
 	const providersQuery = useProvidersQuery();
 	const allProviders = computed<Provider[]>(() => {
@@ -65,6 +118,13 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		selectedGRs.value.reduce((sum: number, gr: GoodsReceipt) => sum + Number(gr.ImporteMl), 0),
 	);
 
+	const formatCurrency = (amount: number, currency: string) => {
+		return new Intl.NumberFormat('es-MX', {
+			style: 'currency',
+			currency: currency,
+		}).format(amount);
+	};
+
 	const isSelectionLocked = computed<boolean>(() => currentStepIndex.value > 1);
 
 	const canProceedToStep2 = computed<boolean>(() => selectedGRs.value.length > 0);
@@ -73,7 +133,16 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		() => selectedPdfFile.value !== null && selectedXmlFile.value !== null,
 	);
 
+	// Determinar si necesitamos el paso de datos de factura
+	const needsInvoiceDataStep = computed<boolean>(() => invoiceData.value.moneda !== 'MXN');
+
+	// Ajustar la validación del paso 4 basado en si existe o no
 	const canProceedToStep4 = computed<boolean>(() => {
+		// Si no necesitamos el paso de datos de factura, siempre retornar true
+		if (!needsInvoiceDataStep.value) {
+			return true;
+		}
+
 		try {
 			InvoiceDataSchema.parse(invoiceData.value);
 			return true;
@@ -81,6 +150,32 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			return false;
 		}
 	});
+
+	// Obtener el índice real del paso actual considerando los pasos dinámicos
+	const getCurrentStepId = computed<string>(() => {
+		return steps.value[currentStepIndex.value]?.id || 'select_supplier';
+	});
+
+	// Verificar si estamos en el paso de datos de factura
+	const isInvoiceDataStep = computed<boolean>(() => {
+		return getCurrentStepId.value === 'invoice_data';
+	});
+
+	// Watcher para manejar cambios en la moneda y ajustar el paso actual si es necesario
+	watch(
+		() => invoiceData.value.moneda,
+		(newMoneda, oldMoneda) => {
+			// Si estamos en el paso de confirmación y la moneda cambió de no-MXN a MXN
+			// necesitamos retroceder un paso porque el paso de datos de factura desapareció
+			if (
+				oldMoneda !== 'MXN' &&
+				newMoneda === 'MXN' &&
+				currentStepIndex.value === steps.value.length - 1
+			) {
+				currentStepIndex.value = Math.max(0, currentStepIndex.value - 1);
+			}
+		},
+	);
 
 	const purchaseOrdersQuery = useOrdenesCompraSAPQuery(selectedSupplierId, selectedSupplierRfc, {
 		enabled: computed(() => !!selectedSupplierId.value && !!selectedSupplierRfc.value),
@@ -109,7 +204,11 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			selectedSupplierRfc.value = validatedSupplier.rfc;
 			currentSupplierName.value = validatedSupplier.nombre_razon_social;
 
-			currentStepIndex.value = 1;
+			// Solo avanzar al siguiente paso si no es auto-configuración
+			if (!isUserProvider.value) {
+				currentStepIndex.value = 1;
+			}
+
 			toast.success(`Proveedor seleccionado: ${validatedSupplier.nombre_razon_social}`);
 		} catch (error) {
 			console.error('Invalid supplier data:', error);
@@ -195,43 +294,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 		if (files.xml) {
 			await validateAndProcessXml(files.xml);
-			// // Lógica de validación de XML
-			// if (files.xml.size > 10 * 1024 * 1024) {
-			// 	/* ... */ return;
-			// }
-			// const allowedXmlTypes = ['text/xml', 'application/xml'];
-			// if (!allowedXmlTypes.includes(files.xml.type)) {
-			// 	/* ... */ return;
-			// }
-
-			// selectedXmlFile.value = files.xml;
-			// xmlValidationStatus.value = 'loading';
-
-			// try {
-			// 	// --- AQUÍ VA TU LÓGICA DE VALIDACIÓN REAL ---
-			// 	// Por ejemplo, una llamada a tu backend para validar el UUID
-			// 	console.log('Simulando validación de XML en el backend...');
-			// 	await new Promise((resolve) => setTimeout(resolve, 1500));
-
-			// 	// Simula un error para probar
-			// 	if (Math.random() < 0.3) {
-			// 		throw new Error('El UUID de este XML ya fue registrado.');
-			// 	}
-			// 	// --- FIN DE LA LÓGICA DE VALIDACIÓN ---
-
-			// 	xmlValidationStatus.value = 'success';
-			// 	toast.success('XML validado correctamente');
-			// } catch (error: unknown) {
-			// 	xmlValidationStatus.value = 'error';
-			// 	let errorMessage = 'Ocurrió un error desconocido.';
-			// 	if (error instanceof Error) {
-			// 		errorMessage = error.message;
-			// 	}
-			// 	xmlValidationError.value = errorMessage;
-			// 	toast.error('Error en la validación del XML', {
-			// 		description: xmlValidationError.value || 'Ocurrió un error desconocido',
-			// 	});
-			// }
 		}
 	};
 
@@ -265,7 +327,8 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			return;
 		}
 
-		if (currentStepIndex.value === 3 && !canProceedToStep4.value) {
+		// Validación para el paso de datos de factura (solo si existe)
+		if (isInvoiceDataStep.value && !canProceedToStep4.value) {
 			toast.error('Completa todos los datos requeridos de la factura');
 			return;
 		}
@@ -285,8 +348,10 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		if (isSubmitting.value) return;
 
 		try {
-			// Validar datos finales
-			InvoiceDataSchema.parse(invoiceData.value);
+			// Validar datos finales solo si necesitamos el paso de datos de factura
+			if (needsInvoiceDataStep.value) {
+				InvoiceDataSchema.parse(invoiceData.value);
+			}
 
 			if (!canProceedToStep3.value) {
 				throw new Error('Archivos faltantes');
@@ -357,14 +422,14 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			// Si alguna de estas funciones falla, lanzará un error que será capturado por el `catch`.
 
 			// Validación #1: Tipo de Comprobante
-			if (extractedData.tipoDeComprobante !== 'I') {
+			if (extractedData.tipo_comprobante !== 'I') {
 				throw new Error('El tipo de comprobante debe ser de Ingreso (I).');
 			}
 
 			// Validación #2: Moneda
-			if (extractedData.moneda !== selectedPO.value?.Moneda) {
-				throw new Error('La moneda del XML no coincide con la de la Orden de Compra.');
-			}
+			// if (extractedData.moneda !== selectedPO.value?.Moneda) {
+			// 	throw new Error('La moneda del XML no coincide con la de la Orden de Compra.');
+			// }
 
 			// Validación #3: Importes (Subtotal vs Entradas de Mercancía)
 			if (extractedData.subtotal !== totalSelectedAmount.value) {
@@ -374,7 +439,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			}
 
 			// Validación #4: Fecha de Timbrado (mismo mes y año)
-			const dateStamped = new Date(extractedData.fechaTimbrado);
+			const dateStamped = new Date(extractedData.fecha_timbrado);
 			const currentDate = new Date();
 			if (
 				dateStamped.getMonth() !== currentDate.getMonth() ||
@@ -383,20 +448,26 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 				throw new Error('La fecha de la factura no corresponde al mes y año actual.');
 			}
 
-			// Validación #5: RFC del Receptor (simulando llamada a API)
-			// TODO: Reemplazar esto con tu llamada real a la API
-			console.log(`Validando RFC Receptor en backend: ${extractedData.rfcReceptor}`);
+			// Validación #5: RFC del Receptor
+			console.log(`Validando RFC Receptor: ${extractedData.rfc_receptor}`);
 			const rfcQueryOptions = {
-				queryKey: ['validate-rfc', extractedData.rfcReceptor],
+				queryKey: ['validate-rfc', extractedData.rfc_receptor],
 				queryFn: async (): Promise<ValidateRfcResponse> => {
 					const { data } = await axiosInstance.post(
-						`/validate/rfc?rfc=${extractedData.rfcReceptor}`,
+						`/validate/rfc?rfc=${extractedData.rfc_receptor}`,
 					);
 					return ValidateRfcResponseSchema.parse(data);
 				},
 			};
 
 			// RFC EMISOR ES EL DEL PROVEEDOR SELECCIONADO
+			// const rfcEmisor = selectedSupplierRfc.value;
+			// console.log(`RFC Emisor: ${rfcEmisor}`);
+			// if (rfcEmisor !== extractedData.rfc_emisor) {
+			// 	throw new Error(
+			// 		'El RFC del emisor en el XML no coincide con el del proveedor seleccionado.',
+			// 	);
+			// }
 
 			const response = await queryClient.fetchQuery(rfcQueryOptions);
 			if (response.status != 'OK') {
@@ -411,7 +482,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			// TODO: Implementar la lógica para obtener el rol del usuario
 			const userRole = 'EMPL'; // Simular rol de empleado
 			if (userRole === 'EMPL') {
-				if (extractedData.rfcEmisor !== selectedSupplierRfc.value) {
+				if (extractedData.rfc_emisor !== selectedSupplierRfc.value) {
 					throw new Error(
 						'El RFC del emisor en el XML no coincide con el del proveedor seleccionado.',
 					);
@@ -427,6 +498,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 				sociedad: '',
 			});
 
+			invoiceExtractedData.value = extractedData;
 			selectedXmlFile.value = xmlFile;
 			xmlValidationStatus.value = 'success';
 			toast.success('XML validado correctamente.');
@@ -455,6 +527,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		selectedXmlFile,
 		invoiceData,
 		isSubmitting,
+		invoiceExtractedData,
 
 		purchaseOrdersQuery,
 		goodsReceiptsQuery,
@@ -473,6 +546,12 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		canProceedToStep2,
 		canProceedToStep3,
 		canProceedToStep4,
+		isUserProvider,
+		userProvider,
+		formatCurrency,
+		needsInvoiceDataStep,
+		getCurrentStepId,
+		isInvoiceDataStep,
 
 		// Actions
 		selectSupplier,
@@ -488,5 +567,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		prevStep,
 		submitInvoice,
 		resetInvoiceProcess,
+		autoConfigureProvider,
 	};
 });

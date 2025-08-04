@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,12 +26,19 @@ const handleSupplierSelect = (provider: Provider) => {
   invoiceStore.selectSupplier(provider)
   isSupplierPopoverOpen.value = false
 }
+
+// Auto-configurar proveedor si el usuario es un proveedor
+onMounted(() => {
+  if (invoiceStore.isUserProvider) {
+    invoiceStore.autoConfigureProvider()
+  }
+})
 </script>
 
 <template>
   <Card>
     <!-- Vista de Selección de Proveedor -->
-    <template v-if="!invoiceStore.selectedSupplierId">
+    <template v-if="!invoiceStore.selectedSupplierId && !invoiceStore.isUserProvider">
       <CardHeader>
         <CardTitle>Proveedores</CardTitle>
         <CardDescription>Busca y selecciona un proveedor</CardDescription>
@@ -69,6 +76,19 @@ const handleSupplierSelect = (provider: Provider) => {
       </CardContent>
     </template>
 
+    <!-- Vista de Proveedor Auto-configurado -->
+    <template v-else-if="invoiceStore.isUserProvider && !invoiceStore.selectedSupplierId">
+      <CardHeader>
+        <CardTitle>Configurando proveedor...</CardTitle>
+        <CardDescription>Detectando información del proveedor</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div class="flex items-center justify-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </CardContent>
+    </template>
+
     <!-- Vista de Selección de OC -->
     <template v-else>
       <CardHeader>
@@ -77,7 +97,8 @@ const handleSupplierSelect = (provider: Provider) => {
             <CardTitle>Órdenes de Compra</CardTitle>
             <CardDescription class="my-2">{{ invoiceStore.currentSupplierName }}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" @click="invoiceStore.resetSupplierSelection">
+          <Button v-if="!invoiceStore.isUserProvider" variant="outline" size="sm"
+            @click="invoiceStore.resetSupplierSelection">
             Cambiar
           </Button>
         </div>

@@ -32,6 +32,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   layoutStore.hideRightSidebar()
+  // Resetear el estado del store al salir de la pantalla
+  invoiceStore.resetInvoiceProcess()
 })
 
 // Watcher para actualizar props del sidebar
