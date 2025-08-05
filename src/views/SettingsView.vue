@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,9 +37,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useDeviationsQuery } from '@/composables/useDeviations'
+import { useBlocksQuery } from '@/composables/useBlocks'
 
 // Estado del segmento seleccionado
 const selectedSection = ref<'cuenta' | 'bloqueos' | 'desviaciones'>('cuenta')
+
+
 
 // ... (los mismos datos simulados y métodos que antes)
 const accountData = {
@@ -71,43 +75,25 @@ const accountData = {
   },
 }
 
-const bloqueos = ref([
-  {
-    id: 'b1',
-    nombre: 'Bloqueo de pagos',
-    descripcion: 'Restringe el acceso al módulo de pagos.',
-    modulos: ['Pagos', 'Facturación'],
-    fechaCreacion: '2024-06-01T10:00:00Z',
-  },
-  {
-    id: 'b2',
-    nombre: 'Bloqueo de reportes',
-    descripcion: 'No permite generar reportes financieros.',
-    modulos: ['Reportes'],
-    fechaCreacion: '2024-06-10T15:30:00Z',
-  },
-])
+// Fetch blocks from API
+const { data: blocksResponse, isLoading: isLoadingBlocks, error: blocksError } = useBlocksQuery()
 
-const desviaciones = ref([
-  {
-    id: 'd1',
-    descripcion: 'Desviación de gastos menores',
-    moneda: 'MXN',
-    monto: 5000,
-    estatus: 'Activo',
-    fechaCreacion: '2024-05-20T09:00:00Z',
-    fechaModificacion: '2024-06-01T12:00:00Z',
-  },
-  {
-    id: 'd2',
-    descripcion: 'Desviación de compras urgentes',
-    moneda: 'USD',
-    monto: 1000,
-    estatus: 'Inactivo',
-    fechaCreacion: '2024-05-25T11:00:00Z',
-    fechaModificacion: '2024-06-05T14:00:00Z',
-  },
-])
+// Computed property to get blocks from response
+const bloqueos = computed(() => {
+  if (!blocksResponse.value?.object) return []
+  return blocksResponse.value.object
+})
+
+// Fetch deviations from API
+const { data: deviationsResponse, isLoading: isLoadingDeviations, error: deviationsError } = useDeviationsQuery()
+
+// Computed property to get deviations from response
+const desviaciones = computed(() => {
+  if (!deviationsResponse.value?.object) return []
+  return deviationsResponse.value.object
+})
+
+
 
 const editBloqueo = (id: string) => alert(`Editar bloqueo ${id}`)
 const deleteBloqueo = (id: string) => alert(`Eliminar bloqueo ${id}`)
@@ -129,20 +115,20 @@ const formatDate = (date: string) =>
     <!-- Segmented control con iconos -->
     <div class="flex gap-2 mb-8">
       <Button :variant="selectedSection === 'cuenta' ? 'default' : 'outline'" :class="selectedSection === 'cuenta'
-          ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
-          : 'rounded-r-none'
+        ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
+        : 'rounded-r-none'
         " class="rounded-r-none font-semibold flex items-center gap-2" @click="selectedSection = 'cuenta'">
         <User class="h-5 w-5" /> Cuenta
       </Button>
       <Button :variant="selectedSection === 'bloqueos' ? 'default' : 'outline'" :class="selectedSection === 'bloqueos'
-          ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
-          : 'rounded-r-none'
+        ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
+        : 'rounded-r-none'
         " class="rounded-none font-semibold flex items-center gap-2" @click="selectedSection = 'bloqueos'">
         <Lock class="h-5 w-5" /> Bloqueos
       </Button>
       <Button :variant="selectedSection === 'desviaciones' ? 'default' : 'outline'" :class="selectedSection === 'desviaciones'
-          ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
-          : 'rounded-r-none'
+        ? 'rounded-r-none bg-secondary-foreground/70 text-white hover:bg-secondary-foreground'
+        : 'rounded-r-none'
         " class="rounded-l-none font-semibold flex items-center gap-2" @click="selectedSection = 'desviaciones'">
         <GitCompareArrows class="h-5 w-5" /> Desviaciones
       </Button>
@@ -355,7 +341,33 @@ const formatDate = (date: string) =>
           <PlusCircle class="mr-2 h-4 w-4" /> Nuevo Bloqueo
         </Button>
       </div>
-      <div class="grid gap-6">
+
+      <!-- Loading state -->
+      <div v-if="isLoadingBlocks" class="flex justify-center items-center py-8">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p class="text-muted-foreground">Cargando bloqueos...</p>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="blocksError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <p class="text-red-800 font-medium">Error al cargar bloqueos:</p>
+        <p class="text-red-600 text-sm">{{ blocksError.message }}</p>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="bloqueos.length === 0" class="text-center py-8">
+        <Lock class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 class="text-lg font-semibold mb-2">No hay bloqueos</h3>
+        <p class="text-muted-foreground mb-4">Crea tu primer bloqueo para comenzar</p>
+        <Button @click="$router.push('/blocks/new')">
+          <PlusCircle class="mr-2 h-4 w-4" /> Crear Bloqueo
+        </Button>
+      </div>
+
+      <!-- Blocks list -->
+      <div v-else class="grid gap-6">
         <Card v-for="bloqueo in bloqueos" :key="bloqueo.id" class="transition-shadow hover:border hover:border-primary">
           <CardHeader class="flex items-center justify-between pb-2">
             <div class="flex gap-5 items-center">
@@ -398,7 +410,7 @@ const formatDate = (date: string) =>
           </CardContent>
           <CardFooter class="text-xs justify-end text-muted-foreground flex items-center gap-2">
             <Calendar class="h-4 w-4" />
-            <span>Creado: {{ formatDate(bloqueo.fechaCreacion) }}</span>
+            <span>Creado: {{ formatDate(bloqueo.fecha_creacion) }}</span>
           </CardFooter>
         </Card>
       </div>
@@ -411,7 +423,33 @@ const formatDate = (date: string) =>
           <PlusCircle class="mr-2 h-4 w-4" /> Nueva Desviación
         </Button>
       </div>
-      <div class="grid gap-6">
+
+      <!-- Loading state -->
+      <div v-if="isLoadingDeviations" class="flex justify-center items-center py-8">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p class="text-muted-foreground">Cargando desviaciones...</p>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="deviationsError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <p class="text-red-800 font-medium">Error al cargar desviaciones:</p>
+        <p class="text-red-600 text-sm">{{ deviationsError.message }}</p>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="desviaciones.length === 0" class="text-center py-8">
+        <GitCompareArrows class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 class="text-lg font-semibold mb-2">No hay desviaciones</h3>
+        <p class="text-muted-foreground mb-4">Crea tu primera desviación para comenzar</p>
+        <Button @click="$router.push('/deviation/new')">
+          <PlusCircle class="mr-2 h-4 w-4" /> Crear Desviación
+        </Button>
+      </div>
+
+      <!-- Deviations list -->
+      <div v-else class="grid gap-6">
         <Card v-for="desv in desviaciones" :key="desv.id" class="transition-shadow hover:border hover:border-primary">
           <CardHeader class="flex items-center justify-between pb-2">
             <div class="flex items-center gap-3">
@@ -453,8 +491,8 @@ const formatDate = (date: string) =>
             <div class="text-right">
               <p class="text-sm text-muted-foreground mb-1">Estatus</p>
               <Badge :class="desv.estatus === 'Activo'
-                  ? 'border-green-500 text-green-600 bg-transparent font-bold'
-                  : 'border-red-500 text-red-600 bg-transparent font-bold'
+                ? 'border-green-500 text-green-600 bg-transparent font-bold'
+                : 'border-red-500 text-red-600 bg-transparent font-bold'
                 " class="text-sm">
                 {{ desv.estatus }}
               </Badge>
@@ -462,8 +500,8 @@ const formatDate = (date: string) =>
           </CardContent>
           <CardFooter class="text-xs justify-end text-muted-foreground flex items-center gap-2 pt-2">
             <Calendar class="h-4 w-4" />
-            <span>Creado: {{ formatDate(desv.fechaCreacion) }} | Modificado:
-              {{ formatDate(desv.fechaModificacion) }}</span>
+            <span>Creado: {{ formatDate(desv.fecha_creacion) }} | Modificado:
+              {{ formatDate(desv.fecha_modificacion) }}</span>
           </CardFooter>
         </Card>
       </div>
