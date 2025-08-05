@@ -1,0 +1,113 @@
+{
+  "factura": {
+    "id_factura": 0,
+    "uuid": "string",
+    "moneda": "string",
+    "total": 0,
+    "fecha_expedicion": "string",
+    "fecha_timbrado": "string",
+    "fecha_creacion": "string",
+    "razonsocial_emisor": "string",
+    "rfc_emisor": "string",
+    "razonsocial_receptor": "string",
+    "rfc_receptor": "string",
+    "domicilio_fiscal": "string",
+    "metodo_pago": "string",
+    "forma_pago": "string",
+    "estatus": "string",
+    "file_path": "string",
+    "sello": "string",
+    "no_certificado": "string",
+    "certificado": "string",
+    "subtotal": 0,
+    "tipo_comprobante": "string",
+    "regimen_fiscal_receptor": "string",
+    "uso_cfdi": "string",
+    "total_impuestos_trasladados": 0,
+    "total_impuestos_retenidos": 0,
+    "sello_sat": "string",
+    "no_certificado_sat": "string",
+    "tipo_factura": "string",
+    "serie": "string",
+    "folio": "string",
+    "documento_contable": "string",
+    "ejercicio_fiscal": "string",
+    "sociedad": "string",
+    "conceptos": [
+      {
+        "id_concepto": 0,
+        "uuid_factura": "string",
+        "clave_prod_serv": "string",
+        "cantidad": 0,
+        "clave_unidad": "string",
+        "unidad": "string",
+        "descripcion": "string",
+        "valor_unitario": 0,
+        "importe": 0,
+        "estatus": "string",
+        "fecha_creacion": "string",
+        "fecha_modificacion": "string"
+      }
+    ],
+    "id_proveedor_sap": "string"
+  },
+  "orden_compra": [
+    {
+      "DocumentoCompras": "string",
+      "IsAnual": "string",
+      "Sociedad": "string",
+      "Monto": "string",
+      "Moneda": "string",
+      "FechaCreacion": "string",
+      "NoProveedor": "string",
+      "Rfc": "string",
+      "DenominacionSociedad": "string",
+      "CodigoPostalSociedad": "string",
+      "RfcSociedad": "string",
+      "RegFiscalSociedad": "string",
+      "Proveedor": "string",
+      "NombreProveedor": "string",
+      "CodigoPostalProveedor": "string",
+      "RegFiscalProveedor": "string",
+      "ClaveTipoPedido": "string",
+      "TipoPedido": "string",
+      "CondPago": "string"
+    }
+  ],
+  "entradas_mercancia": [
+    {
+      "id_factura": 0,
+      "SheetNo": "string",
+      "SheetItem": "string",
+      "Proveedor": "string",
+      "Moneda": "string",
+      "PosDocRef": "string",
+      "DocMaterial": "string",
+      "ImporteMl": "string",
+      "UnidadMedida": "string",
+      "Cantidad": "string",
+      "Material": "string",
+      "ClaveMaterial": "string",
+      "Posicion": "string",
+      "IndImpuestos": "string",
+      "FechaEm": "string",
+      "ClaseMvto": "string",
+      "UmText": "string",
+      "PrecioUnit": "string",
+      "OrdenCompra": "string",
+      "EjercicioDocMat": "string"
+    }
+  ],
+  "files": [
+    "string"
+  ],
+  "retenciones": [
+    {
+      "Base": "string",
+      "Impuesto": "string",
+      "TipoFactor": "string",
+      "TasaOCuota": "string",
+      "Importe": "string"
+    }
+  ]
+}

@@ -19,6 +19,58 @@ import { ValidateRfcResponseSchema, type ValidateRfcResponse } from '@/schemas/v
 import { queryClient } from '@/main';
 import { useAuthStore } from './authStore';
 
+// Interfaz para los datos extraídos del XML
+interface ExtractedXmlData {
+	uuid: string;
+	fecha_timbrado: string;
+	sello_sat: string;
+	no_certificado_sat: string;
+	moneda: string;
+	total: number;
+	subtotal: number;
+	fecha_expedicion: string;
+	metodo_pago: string;
+	forma_pago: string;
+	sello: string;
+	no_certificado: string;
+	certificado: string;
+	tipo_comprobante: string;
+	serie: string;
+	folio: string;
+	lugar_expedicion: string;
+	razonsocial_emisor: string;
+	rfc_emisor: string;
+	regimen_fiscal_emisor: string;
+	razonsocial_receptor: string;
+	rfc_receptor: string;
+	domicilio_fiscal_receptor: string;
+	regimen_fiscal_receptor: string;
+	uso_cfdi: string;
+	total_impuestos_trasladados: number;
+	total_impuestos_retenidos: number;
+	conceptos: Array<{
+		id_concepto: number;
+		uuid_factura: string;
+		clave_prod_serv: string;
+		cantidad: number;
+		clave_unidad: string;
+		unidad: string;
+		descripcion: string;
+		valor_unitario: number;
+		importe: number;
+		estatus: string;
+		fecha_creacion: string;
+		fecha_modificacion: string;
+	}>;
+	retenciones?: Array<{
+		Base: string;
+		Impuesto: string;
+		TipoFactor: string;
+		TasaOCuota: string;
+		Importe: string;
+	}>;
+}
+
 export const usePOInvoiceStore = defineStore('po-invoice', () => {
 	// Estado
 	const allSteps = ref<Step[]>([
@@ -62,7 +114,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		sociedad: '',
 	});
 
-	const invoiceExtractedData = ref<unknown | null>(null);
+	const invoiceExtractedData = ref<ExtractedXmlData | null>(null);
 
 	const xmlValidationStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
 	const xmlValidationError = ref<string | null>(null);
@@ -515,6 +567,92 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		}
 	};
 
+	const createFactura = async () => {
+		try {
+			// Construir el objeto de factura (ver comentarios para campos a mapear)
+			const factura = {
+				id_factura: 0,
+				uuid: invoiceExtractedData.value?.uuid || '', // Mapear del XML
+				moneda: invoiceData.value.moneda,
+				total: invoiceData.value.importe,
+				fecha_expedicion: invoiceExtractedData.value?.fecha_expedicion || '', // Mapear del XML
+				fecha_timbrado: invoiceExtractedData.value?.fecha_timbrado || '', // Mapear del XML
+				fecha_creacion: new Date().toISOString(),
+				razonsocial_emisor: invoiceExtractedData.value?.razonsocial_emisor || '', // Mapear del XML
+				rfc_emisor: invoiceExtractedData.value?.rfc_emisor || selectedSupplierRfc.value,
+				razonsocial_receptor: invoiceExtractedData.value?.razonsocial_receptor || '', // Mapear del XML
+				rfc_receptor: invoiceExtractedData.value?.rfc_receptor || '', // Mapear del XML
+				domicilio_fiscal: invoiceExtractedData.value?.domicilio_fiscal_receptor || '', // Mapear del XML
+				metodo_pago: invoiceExtractedData.value?.metodo_pago || '', // Mapear del XML
+				forma_pago: invoiceExtractedData.value?.forma_pago || '', // Mapear del XML
+				estatus: 'NUEVA',
+				file_path: '', // El backend lo asigna
+				sello: invoiceExtractedData.value?.sello || '', // Mapear del XML
+				no_certificado: invoiceExtractedData.value?.no_certificado || '', // Mapear del XML
+				certificado: invoiceExtractedData.value?.certificado || '', // Mapear del XML
+				subtotal: invoiceExtractedData.value?.subtotal || 0,
+				tipo_comprobante: invoiceExtractedData.value?.tipo_comprobante || '', // Mapear del XML
+				regimen_fiscal_receptor: invoiceExtractedData.value?.regimen_fiscal_receptor || '', // Mapear del XML
+				uso_cfdi: invoiceExtractedData.value?.uso_cfdi || '', // Mapear del XML
+				total_impuestos_trasladados:
+					invoiceExtractedData.value?.total_impuestos_trasladados || 0, // Mapear del XML
+				total_impuestos_retenidos:
+					invoiceExtractedData.value?.total_impuestos_retenidos || 0, // Mapear del XML
+				sello_sat: invoiceExtractedData.value?.sello_sat || '', // Mapear del XML
+				no_certificado_sat: invoiceExtractedData.value?.no_certificado_sat || '', // Mapear del XML
+				tipo_factura: invoiceExtractedData.value?.tipo_comprobante || '', // Mapear del XML
+				serie: invoiceExtractedData.value?.serie || '', // Mapear del XML
+				folio: invoiceData.value.folio,
+				documento_contable: '', // ¿De dónde se obtiene?
+				ejercicio_fiscal: '', // ¿De dónde se obtiene?
+				sociedad: invoiceData.value.sociedad,
+				conceptos: invoiceExtractedData.value?.conceptos || [], // Mapear del XML
+				id_proveedor_sap: selectedSupplierId.value,
+			};
+
+			const orden_compra = selectedPO.value ? [selectedPO.value] : [];
+			const entradas_mercancia = selectedGRs.value;
+			const retenciones = invoiceExtractedData.value?.retenciones || [];
+
+			// Crear FormData
+			const formData = new FormData();
+			formData.append('factura', JSON.stringify(factura));
+			formData.append('orden_compra', JSON.stringify(orden_compra));
+			formData.append('entradas_mercancia', JSON.stringify(entradas_mercancia));
+			formData.append('retenciones', JSON.stringify(retenciones));
+
+			// Adjuntar archivos PDF y XML como blobs
+			if (selectedPdfFile.value) {
+				formData.append('files', selectedPdfFile.value, selectedPdfFile.value.name);
+			}
+			if (selectedXmlFile.value) {
+				formData.append('files', selectedXmlFile.value, selectedXmlFile.value.name);
+			}
+
+			// Usar TanStack Query para la petición
+			const createFacturaQueryOptions = {
+				queryKey: ['create-factura', factura.uuid, factura.folio],
+				queryFn: async () => {
+					const { data } = await axiosInstance.post('/factura', formData, {
+						headers: {
+							'Content-Type': 'multipart/form-data',
+						},
+					});
+					return data;
+				},
+			};
+
+			const response = await queryClient.fetchQuery(createFacturaQueryOptions);
+
+			toast.success('Factura creada correctamente');
+			return response;
+		} catch (error) {
+			console.error('Error al crear la factura:', error);
+			toast.error('Error al crear la factura');
+			throw error;
+		}
+	};
+
 	return {
 		// Estado
 		steps,
@@ -528,6 +666,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		invoiceData,
 		isSubmitting,
 		invoiceExtractedData,
+		createFactura,
 
 		purchaseOrdersQuery,
 		goodsReceiptsQuery,
