@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
 import { AlertCircle } from 'lucide-vue-next'
+import { formatCurrency } from '@/lib/utils'
 
 const invoiceStore = usePOInvoiceStore()
 const showConfirmDialog = ref(false)
@@ -47,7 +48,8 @@ const handleConfirmSubmit = async () => {
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Total Seleccionado:</span>
-        <span class="font-semibold">{{ invoiceStore.invoiceData.moneda }} {{ invoiceStore.totalSelectedAmount }}</span>
+        <span class="font-semibold">{{ formatCurrency(invoiceStore.totalSelectedAmount, invoiceStore.invoiceData.moneda)
+          }}</span>
       </div>
       <Separator />
       <div class="flex justify-between">
@@ -77,13 +79,14 @@ const handleConfirmSubmit = async () => {
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Importe:</span>
-        <span class="font-semibold">{{ invoiceStore.invoiceData.importe }}</span>
+        <span class="font-semibold">{{ formatCurrency(invoiceStore.invoiceData.importe, invoiceStore.invoiceData.moneda)
+          }}</span>
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">Sociedad:</span>
         <span class="font-medium">{{ invoiceStore.invoiceData.sociedad }}</span>
       </div>
-      
+
       <!-- Información de desviación si existe -->
       <div v-if="invoiceStore.deviationInfo" class="space-y-2">
         <Separator />
@@ -95,13 +98,13 @@ const handleConfirmSubmit = async () => {
           <div class="flex justify-between">
             <span class="text-muted-foreground">Diferencia:</span>
             <span class="font-medium text-amber-600">
-              {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+              {{ formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
             </span>
           </div>
           <div class="flex justify-between">
             <span class="text-muted-foreground">Tolerancia:</span>
             <span class="font-medium">
-              {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+              {{ formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
             </span>
           </div>
         </div>
@@ -141,14 +144,14 @@ const handleConfirmSubmit = async () => {
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">Total:</span>
-                <span class="font-semibold">{{ invoiceStore.formatCurrency(invoiceStore.totalSelectedAmount,
+                <span class="font-semibold">{{ formatCurrency(invoiceStore.totalSelectedAmount,
                   invoiceStore.invoiceData.moneda) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">Folio:</span>
                 <span class="font-medium">{{ invoiceStore.invoiceData.folio }}</span>
               </div>
-              
+
               <!-- Información de desviación en el diálogo -->
               <div v-if="invoiceStore.deviationInfo" class="space-y-1">
                 <div class="flex items-center gap-2 mt-2">
@@ -158,7 +161,8 @@ const handleConfirmSubmit = async () => {
                 <div class="flex justify-between text-xs">
                   <span class="text-muted-foreground">Diferencia:</span>
                   <span class="font-medium text-amber-600">
-                    {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+                    {{ formatCurrency(invoiceStore.deviationInfo.desviacion_permitida,
+                      invoiceStore.deviationInfo.moneda) }}
                   </span>
                 </div>
               </div>

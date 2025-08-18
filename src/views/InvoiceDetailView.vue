@@ -33,6 +33,7 @@ import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
 import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
 import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import { formatCurrency } from '@/lib/utils'
 
 // Simulación: obtén el uuid de la ruta
 const route = useRoute()
@@ -109,8 +110,7 @@ const getStatusBadgeVariant = (status: string) => {
 	}
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+import { formatCurrency } from '@/lib/utils'
 
 // Función para descargar la factura
 const downloadPDF = () => {
@@ -127,11 +127,8 @@ const downloadXML = () => {
 <template>
 	<div class="container mx-auto py-6 md:py-10">
 		<div class="flex justify-between">
-			<Button
-				variant="outline"
-				class="mb-6 flex items-center gap-2 cursor-pointer"
-				@click="router.push('/invoices')"
-			>
+			<Button variant="outline" class="mb-6 flex items-center gap-2 cursor-pointer"
+				@click="router.push('/invoices')">
 				<ArrowLeft class="h-4 w-4" />
 				Regresar
 			</Button>
@@ -166,10 +163,7 @@ const downloadXML = () => {
 						</CardTitle>
 						<!-- Nuevo botón de descarga -->
 					</div>
-					<Badge
-						:variant="getStatusBadgeVariant(factura.estatus)"
-						class="text-base capitalize"
-					>
+					<Badge :variant="getStatusBadgeVariant(factura.estatus)" class="text-base capitalize">
 						{{ factura.estatus }}
 					</Badge>
 				</div>
@@ -322,10 +316,7 @@ const downloadXML = () => {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						<TableRow
-							v-for="em in factura.entradasMercancia"
-							:key="em.entradaMercancia"
-						>
+						<TableRow v-for="em in factura.entradasMercancia" :key="em.entradaMercancia">
 							<TableCell class="font-medium">{{ em.ordenCompra }}</TableCell>
 							<TableCell>{{ em.entradaMercancia }}</TableCell>
 							<TableCell class="text-center">{{ em.posicionEM }}</TableCell>

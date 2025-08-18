@@ -14,7 +14,7 @@ export type Deviation = z.infer<typeof DeviationSchema>;
 export const DeviationsResponseSchema = z.object({
 	status: z.string(),
 	errorDescription: z.string().nullable(),
-	object: DeviationSchema,
+	object: z.array(DeviationSchema),
 	message: z.string(),
 });
 export type DeviationsResponse = z.infer<typeof DeviationsResponseSchema>;

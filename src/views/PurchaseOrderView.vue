@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { type DateValue, getLocalTimeZone, today } from '@internationalized/date'
+import { formatCurrency } from '@/lib/utils'
 
 // --- Tipos y Datos Simulados ---
 type OrdenEstatus =
@@ -243,8 +244,7 @@ const formatDate = (dateString: string) => {
 	}
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+// Usar la función importada de utils
 
 watch([searchTerm, selectedProveedor, selectedEstatus, startDate, endDate], () => {
 	currentPage.value = 1
@@ -261,15 +261,10 @@ const getFiltersButtonVariant = () => {
 		<!-- Encabezado y Acciones Principales -->
 		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold md:text-3xl">Órdenes de Compra</h1>
-			<Button
-				:variant="getFiltersButtonVariant()"
-				@click="showFilters = !showFilters"
-				:class="
-					activeFilterCount > 0
-						? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
-						: ''
-				"
-			>
+			<Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
+					? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
+					: ''
+				">
 				<Filter class="mr-2 h-4 w-4" />
 				Filtros
 				<Badge v-if="activeFilterCount > 0" variant="secondary" class="ml-2">{{
@@ -283,31 +278,19 @@ const getFiltersButtonVariant = () => {
 			<!-- Columna de Tarjetas de Órdenes -->
 			<div class="flex-1">
 				<!-- Controles de Ordenación -->
-				<div
-					class="mb-4 flex items-center justify-between rounded-lg border bg-card p-2 text-card-foreground"
-				>
-					<span class="text-sm text-muted-foreground"
-						>Ordenar por:
+				<div class="mb-4 flex items-center justify-between rounded-lg border bg-card p-2 text-card-foreground">
+					<span class="text-sm text-muted-foreground">Ordenar por:
 						<span class="font-semibold text-primary">{{
 							sortKey === 'fechaCarga' ? 'Fecha' : 'Importe'
-						}}</span></span
-					>
+						}}</span></span>
 					<div class="flex items-center gap-1">
-						<Button
-							variant="ghost"
-							size="sm"
-							@click="setSort('fechaCarga')"
-							:class="{ 'bg-accent': sortKey === 'fechaCarga' }"
-						>
+						<Button variant="ghost" size="sm" @click="setSort('fechaCarga')"
+							:class="{ 'bg-accent': sortKey === 'fechaCarga' }">
 							Fecha
 							<ArrowUpDown v-if="sortKey === 'fechaCarga'" class="ml-2 h-4 w-4" />
 						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							@click="setSort('importe')"
-							:class="{ 'bg-accent': sortKey === 'importe' }"
-						>
+						<Button variant="ghost" size="sm" @click="setSort('importe')"
+							:class="{ 'bg-accent': sortKey === 'importe' }">
 							Importe
 							<ArrowUpDown v-if="sortKey === 'importe'" class="ml-2 h-4 w-4" />
 						</Button>
@@ -316,23 +299,18 @@ const getFiltersButtonVariant = () => {
 
 				<!-- Lista de Tarjetas -->
 				<div v-if="paginatedOrdenes.length > 0" class="grid grid-cols-1 gap-5">
-					<Card
-						v-for="orden in paginatedOrdenes"
-						:key="orden.ordenCompra"
-						class="cursor-pointer transition-shadow duration-300 hover:shadow-xl"
-						@click="
+					<Card v-for="orden in paginatedOrdenes" :key="orden.ordenCompra"
+						class="cursor-pointer transition-shadow duration-300 hover:shadow-xl" @click="
 							$router.push({
 								name: 'purchase-order-detail',
 								params: { orden_compra: orden.ordenCompra },
 							})
-						"
-					>
+							">
 						<CardHeader class="flex flex-row items-start justify-between">
 							<div>
 								<CardTitle class="text-lg text-primary">
-									<span class="text-sm text-accent-foreground"
-										>{{ orden.proveedor }} • {{ orden.sociedad }}</span
-									>
+									<span class="text-sm text-accent-foreground">{{ orden.proveedor }} • {{
+										orden.sociedad }}</span>
 									<br />
 									{{ orden.ordenCompra }}
 								</CardTitle>
@@ -359,8 +337,7 @@ const getFiltersButtonVariant = () => {
 							</div>
 							<!-- Importe Total -->
 							<div
-								class="flex flex-col items-start justify-center rounded-lg border bg-muted/30 p-4 md:items-end"
-							>
+								class="flex flex-col items-start justify-center rounded-lg border bg-muted/30 p-4 md:items-end">
 								<span class="text-sm text-muted-foreground">Importe Total</span>
 								<span class="text-2xl font-bold text-primary">{{
 									formatCurrency(orden.importe, orden.moneda)
@@ -371,58 +348,37 @@ const getFiltersButtonVariant = () => {
 						<!-- Stepper de Progreso -->
 						<div class="px-6 pb-5 pt-2">
 							<div class="flex w-full items-center">
-								<template
-									v-for="(status, index) in statusProgression"
-									:key="status"
-								>
+								<template v-for="(status, index) in statusProgression" :key="status">
 									<!-- Punto y Etiqueta del Estatus -->
 									<div class="z-10 flex flex-col items-center">
-										<div
-											class="flex h-6 w-6 items-center justify-center rounded-full border-2"
-											:class="
-												getStatusProgress(orden.estatus).currentIndex >=
-												index
+										<div class="flex h-6 w-6 items-center justify-center rounded-full border-2"
+											:class="getStatusProgress(orden.estatus).currentIndex >=
+													index
 													? 'border-primary bg-primary'
 													: 'border-muted-foreground bg-card'
-											"
-										>
-											<Check
-												v-if="
-													getStatusProgress(orden.estatus).currentIndex >
-													index
-												"
-												class="h-4 w-4 text-white"
-											/>
-											<div
-												v-else-if="
-													getStatusProgress(orden.estatus)
-														.currentIndex === index
-												"
-												class="h-2.5 w-2.5 rounded-full bg-white"
-											></div>
-										</div>
-										<p
-											class="mt-2 text-center text-xs"
-											:class="
-												getStatusProgress(orden.estatus).currentIndex >=
+												">
+											<Check v-if="
+												getStatusProgress(orden.estatus).currentIndex >
 												index
-													? 'font-semibold text-primary'
-													: 'text-muted-foreground'
-											"
-										>
+											" class="h-4 w-4 text-white" />
+											<div v-else-if="
+												getStatusProgress(orden.estatus)
+													.currentIndex === index
+											" class="h-2.5 w-2.5 rounded-full bg-white"></div>
+										</div>
+										<p class="mt-2 text-center text-xs" :class="getStatusProgress(orden.estatus).currentIndex >=
+												index
+												? 'font-semibold text-primary'
+												: 'text-muted-foreground'
+											">
 											{{ status }}
 										</p>
 									</div>
 									<!-- Línea de Conexión -->
-									<div
-										v-if="index < statusProgression.length - 1"
-										class="h-1 flex-1"
-										:class="
-											getStatusProgress(orden.estatus).currentIndex > index
-												? 'bg-primary'
-												: 'bg-muted'
-										"
-									></div>
+									<div v-if="index < statusProgression.length - 1" class="h-1 flex-1" :class="getStatusProgress(orden.estatus).currentIndex > index
+											? 'bg-primary'
+											: 'bg-muted'
+										"></div>
 								</template>
 							</div>
 						</div>
@@ -430,10 +386,7 @@ const getFiltersButtonVariant = () => {
 				</div>
 
 				<!-- Mensaje de "No se encontraron resultados" -->
-				<div
-					v-else
-					class="flex h-64 items-center justify-center rounded-lg border-2 border-dashed"
-				>
+				<div v-else class="flex h-64 items-center justify-center rounded-lg border-2 border-dashed">
 					<p class="text-center text-muted-foreground">
 						No se encontraron órdenes de compra. <br />Intenta ajustar los filtros.
 					</p>
@@ -445,20 +398,11 @@ const getFiltersButtonVariant = () => {
 						Página {{ totalPages > 0 ? currentPage : 0 }} de {{ totalPages }}
 					</div>
 					<div class="flex items-center space-x-2">
-						<Button
-							variant="outline"
-							size="sm"
-							@click="prevPage"
-							:disabled="currentPage === 1"
-						>
+						<Button variant="outline" size="sm" @click="prevPage" :disabled="currentPage === 1">
 							Anterior
 						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							@click="nextPage"
-							:disabled="currentPage === totalPages || totalPages === 0"
-						>
+						<Button variant="outline" size="sm" @click="nextPage"
+							:disabled="currentPage === totalPages || totalPages === 0">
 							Siguiente
 						</Button>
 					</div>
@@ -476,11 +420,7 @@ const getFiltersButtonVariant = () => {
 							<!-- Filtro por Orden de Compra o Proveedor -->
 							<div class="flex flex-col gap-2">
 								<Label for="search-filter">Buscar OC o Proveedor</Label>
-								<Input
-									id="search-filter"
-									placeholder="OC-2024-... o Proveedor"
-									v-model="searchTerm"
-								/>
+								<Input id="search-filter" placeholder="OC-2024-... o Proveedor" v-model="searchTerm" />
 							</div>
 
 							<!-- Filtro por Proveedor (Select) -->
@@ -492,11 +432,8 @@ const getFiltersButtonVariant = () => {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="all">Todos</SelectItem>
-										<SelectItem
-											v-for="proveedor in proveedores"
-											:key="proveedor"
-											:value="proveedor"
-										>
+										<SelectItem v-for="proveedor in proveedores" :key="proveedor"
+											:value="proveedor">
 											{{ proveedor }}
 										</SelectItem>
 									</SelectContent>
@@ -512,11 +449,7 @@ const getFiltersButtonVariant = () => {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="all">Todos</SelectItem>
-										<SelectItem
-											v-for="estatus in estatusOptions"
-											:key="estatus"
-											:value="estatus"
-										>
+										<SelectItem v-for="estatus in estatusOptions" :key="estatus" :value="estatus">
 											{{ estatus }}
 										</SelectItem>
 									</SelectContent>
@@ -529,65 +462,49 @@ const getFiltersButtonVariant = () => {
 								<div class="mt-1 flex flex-col gap-2">
 									<Popover>
 										<PopoverTrigger as-child>
-											<Button
-												variant="outline"
-												class="w-full justify-start text-left font-normal"
-												:class="!startDate && 'text-muted-foreground'"
-											>
+											<Button variant="outline" class="w-full justify-start text-left font-normal"
+												:class="!startDate && 'text-muted-foreground'">
 												<CalendarIcon class="mr-2 h-4 w-4" />
 												<span>{{
 													startDate
 														? df.format(
-																startDate.toDate(
-																	getLocalTimeZone(),
-																),
-															)
+															startDate.toDate(
+																getLocalTimeZone(),
+															),
+														)
 														: 'Fecha de inicio'
 												}}</span>
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent class="w-auto p-0">
-											<Calendar
-												v-model="startDate"
-												:max-value="today(getLocalTimeZone())"
-											/>
+											<Calendar v-model="startDate" :max-value="today(getLocalTimeZone())" />
 										</PopoverContent>
 									</Popover>
 									<Popover>
 										<PopoverTrigger as-child>
-											<Button
-												variant="outline"
-												class="w-full justify-start text-left font-normal"
-												:class="!endDate && 'text-muted-foreground'"
-											>
+											<Button variant="outline" class="w-full justify-start text-left font-normal"
+												:class="!endDate && 'text-muted-foreground'">
 												<CalendarIcon class="mr-2 h-4 w-4" />
 												<span>{{
 													endDate
 														? df.format(
-																endDate.toDate(getLocalTimeZone()),
-															)
+															endDate.toDate(getLocalTimeZone()),
+														)
 														: 'Fecha de fin'
 												}}</span>
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent class="w-auto p-0">
-											<Calendar
-												v-model="endDate"
-												:min-value="startDate"
-												:max-value="today(getLocalTimeZone())"
-											/>
+											<Calendar v-model="endDate" :min-value="startDate"
+												:max-value="today(getLocalTimeZone())" />
 										</PopoverContent>
 									</Popover>
 								</div>
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button
-								variant="ghost"
-								class="w-full cursor-pointer"
-								@click="clearFilters"
-								:disabled="activeFilterCount === 0"
-							>
+							<Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+								:disabled="activeFilterCount === 0">
 								Limpiar filtros
 							</Button>
 						</CardFooter>
@@ -614,6 +531,7 @@ const getFiltersButtonVariant = () => {
 
 /* Ajustes para el layout en pantallas más pequeñas */
 @media (max-width: 768px) {
+
 	.slide-fade-enter-from,
 	.slide-fade-leave-to {
 		transform: translateY(20px);

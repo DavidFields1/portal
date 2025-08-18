@@ -24,6 +24,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { type DateValue, getLocalTimeZone } from '@internationalized/date'
+import { formatCurrency } from '@/lib/utils'
 
 // --- Tipos y Datos Simulados ---
 interface Pago {
@@ -252,8 +253,7 @@ const formatDate = (dateString: string) => {
 	}
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+import { formatCurrency } from '@/lib/utils'
 
 // Watchers
 watch(
@@ -274,15 +274,10 @@ const getFiltersButtonVariant = () => {
 		<!-- Encabezado y Acciones Principales -->
 		<div class="mb-6 flex items-center justify-between">
 			<h1 class="text-2xl font-bold md:text-3xl">Pagos</h1>
-			<Button
-				:variant="getFiltersButtonVariant()"
-				@click="showFilters = !showFilters"
-				:class="
-					activeFilterCount > 0
-						? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
-						: ''
-				"
-			>
+			<Button :variant="getFiltersButtonVariant()" @click="showFilters = !showFilters" :class="activeFilterCount > 0
+					? 'bg-primary text-white hover:bg-violet-400 hover:text-white'
+					: ''
+				">
 				<Filter class="mr-2 h-4 w-4" />
 				Filtros
 				<Badge v-if="activeFilterCount > 0" variant="secondary" class="ml-2">{{
@@ -303,11 +298,7 @@ const getFiltersButtonVariant = () => {
 									<TableRow>
 										<!-- Doc. Contable -->
 										<TableHead>
-											<Button
-												variant="ghost"
-												@click="setSort('docContable')"
-												class="px-1"
-											>
+											<Button variant="ghost" @click="setSort('docContable')" class="px-1">
 												Doc. Contable
 											</Button>
 										</TableHead>
@@ -323,11 +314,7 @@ const getFiltersButtonVariant = () => {
 
 										<!-- Monto -->
 										<TableHead class="text-right">
-											<Button
-												variant="ghost"
-												@click="setSort('monto')"
-												class="px-1"
-											>
+											<Button variant="ghost" @click="setSort('monto')" class="px-1">
 												Monto
 											</Button>
 										</TableHead>
@@ -336,26 +323,16 @@ const getFiltersButtonVariant = () => {
 										<TableHead class="text-center">Estatus</TableHead>
 
 										<!-- Facturas Asociadas -->
-										<TableHead class="text-center"
-											>Facturas Asociadas</TableHead
-										>
+										<TableHead class="text-center">Facturas Asociadas</TableHead>
 
 										<!-- Fechas -->
 										<TableHead class="w-28 text-center">
-											<Button
-												variant="ghost"
-												@click="setSort('fechaDocumento')"
-												class="px-1"
-											>
+											<Button variant="ghost" @click="setSort('fechaDocumento')" class="px-1">
 												Fecha Documento
 											</Button>
 										</TableHead>
 										<TableHead class="w-28 text-center">
-											<Button
-												variant="ghost"
-												@click="setSort('fechaCarga')"
-												class="px-1"
-											>
+											<Button variant="ghost" @click="setSort('fechaCarga')" class="px-1">
 												Fecha Carga
 											</Button>
 										</TableHead>
@@ -363,17 +340,13 @@ const getFiltersButtonVariant = () => {
 								</TableHeader>
 								<TableBody>
 									<template v-if="paginatedPagos.length > 0">
-										<TableRow
-											v-for="pago in paginatedPagos"
-											:key="pago.docContable"
-											class="cursor-pointer transition-colors duration-150"
-											@click="
+										<TableRow v-for="pago in paginatedPagos" :key="pago.docContable"
+											class="cursor-pointer transition-colors duration-150" @click="
 												$router.push({
 													name: 'payments-detail',
 													params: { doc_contable: pago.docContable },
 												})
-											"
-										>
+												">
 											<!-- Celdas con las mismas clases de alineación que sus cabeceras -->
 											<TableCell class="py-4 font-mono">{{
 												pago.docContable
@@ -385,17 +358,14 @@ const getFiltersButtonVariant = () => {
 											<TableCell class="py-4 text-center">{{
 												pago.moneda
 											}}</TableCell>
-											<TableCell class="py-4 font-mono text-right"
-												>{{ formatCurrency(pago.monto, pago.moneda) }}
+											<TableCell class="py-4 font-mono text-right">{{ formatCurrency(pago.monto,
+												pago.moneda) }}
 											</TableCell>
 											<TableCell class="py-4 text-center">
-												<Badge
-													:variant="
-														pago.estatus === 'CONTABILIZADA'
-															? 'success'
-															: 'secondary'
-													"
-												>
+												<Badge :variant="pago.estatus === 'CONTABILIZADA'
+														? 'success'
+														: 'secondary'
+													">
 													{{ pago.estatus }}
 												</Badge>
 											</TableCell>
@@ -424,23 +394,14 @@ const getFiltersButtonVariant = () => {
 							Mostrando {{ paginatedPagos.length }} de {{ sortedPagos.length }} pagos.
 						</div>
 						<div class="flex items-center space-x-2">
-							<Button
-								variant="outline"
-								size="sm"
-								@click="prevPage"
-								:disabled="currentPage === 1"
-							>
+							<Button variant="outline" size="sm" @click="prevPage" :disabled="currentPage === 1">
 								Anterior
 							</Button>
 							<span class="text-sm font-medium">
 								Página {{ totalPages > 0 ? currentPage : 0 }} de {{ totalPages }}
 							</span>
-							<Button
-								variant="outline"
-								size="sm"
-								@click="nextPage"
-								:disabled="currentPage === totalPages || totalPages === 0"
-							>
+							<Button variant="outline" size="sm" @click="nextPage"
+								:disabled="currentPage === totalPages || totalPages === 0">
 								Siguiente
 							</Button>
 						</div>
@@ -459,11 +420,7 @@ const getFiltersButtonVariant = () => {
 							<!-- Filtro por Doc. Contable -->
 							<div class="flex flex-col gap-2">
 								<Label for="search-filter">Buscar por Doc. Contable</Label>
-								<Input
-									id="search-filter"
-									placeholder="Doc. Contable..."
-									v-model="searchTerm"
-								/>
+								<Input id="search-filter" placeholder="Doc. Contable..." v-model="searchTerm" />
 							</div>
 
 							<!-- Filtro por Proveedor -->
@@ -475,11 +432,8 @@ const getFiltersButtonVariant = () => {
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="all">Todos</SelectItem>
-										<SelectItem
-											v-for="proveedor in proveedores"
-											:key="proveedor"
-											:value="proveedor"
-										>
+										<SelectItem v-for="proveedor in proveedores" :key="proveedor"
+											:value="proveedor">
 											{{ proveedor }}
 										</SelectItem>
 									</SelectContent>
@@ -516,19 +470,16 @@ const getFiltersButtonVariant = () => {
 								<div class="flex flex-col gap-2 mt-2">
 									<Popover>
 										<PopoverTrigger as-child>
-											<Button
-												variant="outline"
-												class="w-full justify-start text-left font-normal"
-												:class="!startDate && 'text-muted-foreground'"
-											>
+											<Button variant="outline" class="w-full justify-start text-left font-normal"
+												:class="!startDate && 'text-muted-foreground'">
 												<CalendarIcon class="mr-2 h-4 w-4" />
 												<span>{{
 													startDate
 														? df.format(
-																startDate.toDate(
-																	getLocalTimeZone(),
-																),
-															)
+															startDate.toDate(
+																getLocalTimeZone(),
+															),
+														)
 														: 'Fecha de inicio'
 												}}</span>
 											</Button>
@@ -539,17 +490,14 @@ const getFiltersButtonVariant = () => {
 									</Popover>
 									<Popover>
 										<PopoverTrigger as-child>
-											<Button
-												variant="outline"
-												class="w-full justify-start text-left font-normal"
-												:class="!endDate && 'text-muted-foreground'"
-											>
+											<Button variant="outline" class="w-full justify-start text-left font-normal"
+												:class="!endDate && 'text-muted-foreground'">
 												<CalendarIcon class="mr-2 h-4 w-4" />
 												<span>{{
 													endDate
 														? df.format(
-																endDate.toDate(getLocalTimeZone()),
-															)
+															endDate.toDate(getLocalTimeZone()),
+														)
 														: 'Fecha de fin'
 												}}</span>
 											</Button>
@@ -562,12 +510,8 @@ const getFiltersButtonVariant = () => {
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button
-								variant="ghost"
-								class="w-full cursor-pointer"
-								@click="clearFilters"
-								:disabled="activeFilterCount === 0"
-							>
+							<Button variant="ghost" class="w-full cursor-pointer" @click="clearFilters"
+								:disabled="activeFilterCount === 0">
 								Limpiar filtros
 							</Button>
 						</CardFooter>

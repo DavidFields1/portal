@@ -89,17 +89,19 @@ const { data: deviationsResponse, isLoading: isLoadingDeviations, error: deviati
 
 // Computed property to get deviations from response
 const desviaciones = computed(() => {
-  if (!deviationsResponse.value?.object) return []
-  return deviationsResponse.value.object
-})
+  if (!deviationsResponse.value?.object) return [];
 
+  // Si `deviationsResponse.value` es nulo, toda la expresión será undefined,
+  // y el operador de coalescencia nula (??) devolverá [].
+  return deviationsResponse.value?.object ?? [];
+});
 
 
 const editBloqueo = (id: string) => alert(`Editar bloqueo ${id}`)
 const deleteBloqueo = (id: string) => alert(`Eliminar bloqueo ${id}`)
 
-const editDesviacion = (id: string) => alert(`Editar desviación ${id}`)
-const deleteDesviacion = (id: string) => alert(`Eliminar desviación ${id}`)
+const editDesviacion = (id: number) => alert(`Editar desviación ${id}`)
+const deleteDesviacion = (id: number) => alert(`Eliminar desviación ${id}`)
 
 const formatDate = (date: string) =>
   new Intl.DateTimeFormat('es-MX', {
@@ -375,7 +377,7 @@ const formatDate = (date: string) =>
               <div>
                 <CardTitle class="text-lg font-bold">{{
                   bloqueo.nombre
-                  }}</CardTitle>
+                }}</CardTitle>
                 <p class="text-sm text-muted-foreground">
                   {{ bloqueo.descripcion }}
                 </p>
@@ -439,7 +441,7 @@ const formatDate = (date: string) =>
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="desviaciones.length === 0" class="text-center py-8">
+      <div v-else-if="Array.isArray(desviaciones) && desviaciones.length === 0" class="text-center py-8">
         <GitCompareArrows class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 class="text-lg font-semibold mb-2">No hay desviaciones</h3>
         <p class="text-muted-foreground mb-4">Crea tu primera desviación para comenzar</p>
@@ -450,7 +452,8 @@ const formatDate = (date: string) =>
 
       <!-- Deviations list -->
       <div v-else class="grid gap-6">
-        <Card v-for="desv in desviaciones" :key="desv.id" class="transition-shadow hover:border hover:border-primary">
+        <Card v-for="desv in desviaciones" :key="desv.id_desviacion_moneda"
+          class="transition-shadow hover:border hover:border-primary">
           <CardHeader class="flex items-center justify-between pb-2">
             <div class="flex items-center gap-3">
               <GitCompareArrows class="h-5 w-5 text-muted-foreground" />
@@ -465,10 +468,10 @@ const formatDate = (date: string) =>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuItem @click="editDesviacion(desv.id)">
+                <DropdownMenuItem @click="editDesviacion(desv.id_desviacion_moneda)">
                   <Pencil class="mr-2 h-4 w-4" /> Editar
                 </DropdownMenuItem>
-                <DropdownMenuItem @click="deleteDesviacion(desv.id)"
+                <DropdownMenuItem @click="deleteDesviacion(desv.id_desviacion_moneda)"
                   class="text-red-600 focus:bg-red-100 focus:text-red-700">
                   <Trash2 class="mr-2 h-4 w-4" /> Eliminar
                 </DropdownMenuItem>
@@ -482,7 +485,7 @@ const formatDate = (date: string) =>
               <div>
                 <p class="text-sm text-muted-foreground">Monto Permitido</p>
                 <p class="text-xl font-bold flex items-baseline">
-                  {{ desv.monto.toLocaleString() }}
+                  {{ desv.desviacion_permitida.toLocaleString() }}
                   <span class="text-base font-medium text-muted-foreground ml-1">{{ desv.moneda }}</span>
                 </p>
               </div>

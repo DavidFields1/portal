@@ -39,6 +39,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { formatCurrency } from '@/lib/utils'
 
 // --- Tipos y Lógica del Stepper ---
 type OrdenEstatus =
@@ -160,8 +161,7 @@ const downloadXML = () => {
 	alert(`Iniciando descarga del XML para la OC ${ordenCompra.value.id}`)
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+import { formatCurrency } from '@/lib/utils'
 
 const formatDate = (dateString: string) => {
 	try {
@@ -195,11 +195,8 @@ onMounted(() => {
 	<div class="container mx-auto py-6 md:py-10">
 		<!-- Fila de botones de acción -->
 		<div class="mb-6 flex items-center justify-between">
-			<Button
-				variant="outline"
-				class="flex cursor-pointer items-center gap-2"
-				@click="$router.push('/purchase-order')"
-			>
+			<Button variant="outline" class="flex cursor-pointer items-center gap-2"
+				@click="$router.push('/purchase-order')">
 				<ArrowLeft class="h-4 w-4" />
 				Regresar
 			</Button>
@@ -233,51 +230,32 @@ onMounted(() => {
 						<div class="flex w-full items-center">
 							<template v-for="(status, index) in statusProgression" :key="status">
 								<div class="z-10 flex flex-col items-center">
-									<div
-										class="flex h-6 w-6 items-center justify-center rounded-full border-2"
-										:class="
-											getStatusProgress(ordenCompra.estatus).currentIndex >=
+									<div class="flex h-6 w-6 items-center justify-center rounded-full border-2" :class="getStatusProgress(ordenCompra.estatus).currentIndex >=
 											index
-												? 'border-primary bg-primary'
-												: 'border-muted-foreground bg-card'
-										"
-									>
-										<Check
-											v-if="
-												getStatusProgress(ordenCompra.estatus)
-													.currentIndex > index
-											"
-											class="h-4 w-4 text-white"
-										/>
-										<div
-											v-else-if="
-												getStatusProgress(ordenCompra.estatus)
-													.currentIndex === index
-											"
-											class="h-2.5 w-2.5 rounded-full bg-white"
-										></div>
+											? 'border-primary bg-primary'
+											: 'border-muted-foreground bg-card'
+										">
+										<Check v-if="
+											getStatusProgress(ordenCompra.estatus)
+												.currentIndex > index
+										" class="h-4 w-4 text-white" />
+										<div v-else-if="
+											getStatusProgress(ordenCompra.estatus)
+												.currentIndex === index
+										" class="h-2.5 w-2.5 rounded-full bg-white"></div>
 									</div>
-									<p
-										class="mt-2 text-center text-xs"
-										:class="
-											getStatusProgress(ordenCompra.estatus).currentIndex >=
+									<p class="mt-2 text-center text-xs" :class="getStatusProgress(ordenCompra.estatus).currentIndex >=
 											index
-												? 'font-semibold text-primary'
-												: 'text-muted-foreground'
-										"
-									>
+											? 'font-semibold text-primary'
+											: 'text-muted-foreground'
+										">
 										{{ status }}
 									</p>
 								</div>
-								<div
-									v-if="index < statusProgression.length - 1"
-									class="h-1 flex-1"
-									:class="
-										getStatusProgress(ordenCompra.estatus).currentIndex > index
-											? 'bg-primary'
-											: 'bg-muted'
-									"
-								></div>
+								<div v-if="index < statusProgression.length - 1" class="h-1 flex-1" :class="getStatusProgress(ordenCompra.estatus).currentIndex > index
+										? 'bg-primary'
+										: 'bg-muted'
+									"></div>
 							</template>
 						</div>
 					</div>
@@ -287,12 +265,8 @@ onMounted(() => {
 							Orden de Compra:
 							<span class="text-primary">{{ ordenCompra.id }}</span>
 						</CardTitle>
-						<Badge
-							:variant="
-								ordenCompra.tipoPedido === 'NACIONAL' ? 'secondary' : 'outline'
-							"
-							class="text-base capitalize"
-						>
+						<Badge :variant="ordenCompra.tipoPedido === 'NACIONAL' ? 'secondary' : 'outline'
+							" class="text-base capitalize">
 							<Globe class="mr-2 h-4 w-4" />
 							{{ ordenCompra.tipoPedido }}
 						</Badge>
@@ -314,19 +288,11 @@ onMounted(() => {
 										ordenCompra.anticipo ? 'Aplica Anticipo' : 'Sin Anticipo'
 									}}</span>
 								</div>
-								<div
-									v-if="ordenCompra.anticipo"
-									class="flex items-center justify-between text-sm"
-								>
+								<div v-if="ordenCompra.anticipo" class="flex items-center justify-between text-sm">
 									<span class="text-muted-foreground">Porcentaje</span>
-									<span class="font-medium"
-										>{{ ordenCompra.porcentajeAnticipo }}%</span
-									>
+									<span class="font-medium">{{ ordenCompra.porcentajeAnticipo }}%</span>
 								</div>
-								<div
-									v-if="ordenCompra.anticipo"
-									class="flex items-center justify-between text-sm"
-								>
+								<div v-if="ordenCompra.anticipo" class="flex items-center justify-between text-sm">
 									<span class="text-muted-foreground">Monto a pagar</span>
 									<span class="font-mono font-medium">{{
 										formatCurrency(
@@ -353,9 +319,7 @@ onMounted(() => {
 						</div>
 
 						<!-- Columna Derecha: Resumen Financiero -->
-						<div
-							class="flex flex-col justify-center space-y-3 rounded-lg border bg-muted/30 p-4"
-						>
+						<div class="flex flex-col justify-center space-y-3 rounded-lg border bg-muted/30 p-4">
 							<div class="flex items-baseline justify-between">
 								<span class="text-muted-foreground">Subtotal</span>
 								<span class="font-mono text-lg font-semibold">{{
@@ -480,29 +444,20 @@ onMounted(() => {
 							</TableHeader>
 							<TableBody>
 								<template v-for="pos in posicionesPedido" :key="pos.posicion">
-									<TableRow
-										class="cursor-pointer"
-										@click="togglePosition(pos.posicion)"
-									>
+									<TableRow class="cursor-pointer" @click="togglePosition(pos.posicion)">
 										<TableCell>
 											<Button variant="ghost" size="sm">
-												<ChevronDown
-													class="h-4 w-4 transition-transform"
-													:class="
-														isPositionExpanded(pos.posicion)
-															? 'rotate-180'
-															: ''
-													"
-												/>
+												<ChevronDown class="h-4 w-4 transition-transform" :class="isPositionExpanded(pos.posicion)
+														? 'rotate-180'
+														: ''
+													" />
 											</Button>
 										</TableCell>
 										<TableCell class="font-medium">{{
 											pos.posicion
 										}}</TableCell>
 										<TableCell>{{ pos.material }}</TableCell>
-										<TableCell class="text-right"
-											>{{ pos.cantidad }} {{ pos.um }}</TableCell
-										>
+										<TableCell class="text-right">{{ pos.cantidad }} {{ pos.um }}</TableCell>
 										<TableCell class="text-right font-mono">{{
 											formatCurrency(pos.precioUnitario, ordenCompra.moneda)
 										}}</TableCell>
@@ -513,49 +468,35 @@ onMounted(() => {
 									<!-- Fila desplegable -->
 									<TableRow v-if="isPositionExpanded(pos.posicion)">
 										<TableCell colspan="6" class="p-0">
-											<div
-												class="grid grid-cols-2 gap-4 bg-muted/50 p-4 md:grid-cols-3"
-											>
+											<div class="grid grid-cols-2 gap-4 bg-muted/50 p-4 md:grid-cols-3">
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>No. Material</span
-													>
+													<span class="text-xs text-muted-foreground">No. Material</span>
 													<span class="font-mono text-sm">{{
 														pos.numeroMaterial
 													}}</span>
 												</div>
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>Texto Material</span
-													>
+													<span class="text-xs text-muted-foreground">Texto Material</span>
 													<span class="text-sm">{{
 														pos.textoMaterial
 													}}</span>
 												</div>
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>No. Proveedor</span
-													>
+													<span class="text-xs text-muted-foreground">No. Proveedor</span>
 													<span class="font-mono text-sm">{{
 														pos.numeroProveedor
 													}}</span>
 												</div>
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>Centro</span
-													>
+													<span class="text-xs text-muted-foreground">Centro</span>
 													<span class="text-sm">{{ pos.centro }}</span>
 												</div>
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>Almacén</span
-													>
+													<span class="text-xs text-muted-foreground">Almacén</span>
 													<span class="text-sm">{{ pos.almacen }}</span>
 												</div>
 												<div class="flex flex-col gap-1">
-													<span class="text-xs text-muted-foreground"
-														>Fecha Entrega</span
-													>
+													<span class="text-xs text-muted-foreground">Fecha Entrega</span>
 													<span class="text-sm">{{
 														formatDate(pos.fechaEntrega)
 													}}</span>
@@ -594,22 +535,16 @@ onMounted(() => {
 							</TableHeader>
 							<TableBody>
 								<TableRow v-for="em in entradasMercancia" :key="em.docMaterial">
-									<TableCell class="font-mono text-xs"
-										>{{ em.docMaterial }}/{{ em.ejercicio }}</TableCell
-									>
-									<TableCell class="text-center"
-										>{{ em.posicionEM }}/{{ em.posicionOC }}</TableCell
-									>
+									<TableCell class="font-mono text-xs">{{ em.docMaterial }}/{{ em.ejercicio }}
+									</TableCell>
+									<TableCell class="text-center">{{ em.posicionEM }}/{{ em.posicionOC }}</TableCell>
 									<TableCell>{{ em.descripcion }}</TableCell>
-									<TableCell class="text-right"
-										>{{ em.cantidad }} {{ em.um }}</TableCell
-									>
+									<TableCell class="text-right">{{ em.cantidad }} {{ em.um }}</TableCell>
 									<TableCell class="text-right font-mono">{{
 										formatCurrency(em.importe, ordenCompra.moneda)
 									}}</TableCell>
-									<TableCell class="text-center"
-										>{{ em.indImpuesto }} ({{ em.porcImpuesto }}%)</TableCell
-									>
+									<TableCell class="text-center">{{ em.indImpuesto }} ({{ em.porcImpuesto }}%)
+									</TableCell>
 									<TableCell class="text-right font-mono">{{
 										formatCurrency(em.retenciones, ordenCompra.moneda)
 									}}</TableCell>

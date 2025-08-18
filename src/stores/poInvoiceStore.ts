@@ -19,6 +19,7 @@ import { ValidateRfcResponseSchema, type ValidateRfcResponse } from '@/schemas/v
 import { queryClient } from '@/main';
 import { useAuthStore } from './authStore';
 import { DeviationsResponseSchema, type Deviation } from '@/schemas/deviationSchema';
+import { formatCurrency } from '@/lib/utils';
 
 // Interfaz para la información de desviación
 
@@ -175,11 +176,9 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		selectedGRs.value.reduce((sum: number, gr: GoodsReceipt) => sum + Number(gr.ImporteMl), 0),
 	);
 
-	const formatCurrency = (amount: number, currency: string) => {
-		return new Intl.NumberFormat('es-MX', {
-			style: 'currency',
-			currency: currency,
-		}).format(amount);
+	// Usar la función de utilidad importada
+	const formatCurrencyStore = (amount: number, currency: string) => {
+		return formatCurrency(amount, currency);
 	};
 
 	const isSelectionLocked = computed<boolean>(() => currentStepIndex.value > 1);
@@ -743,7 +742,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		canProceedToStep4,
 		isUserProvider,
 		userProvider,
-		formatCurrency,
+		formatCurrency: formatCurrencyStore,
 		needsInvoiceDataStep,
 		getCurrentStepId,
 		isInvoiceDataStep,

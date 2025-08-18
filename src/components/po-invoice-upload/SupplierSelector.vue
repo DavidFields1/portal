@@ -17,6 +17,7 @@ import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
 import type { Provider } from '@/schemas/providerSchema'
 import Label from '../ui/label/Label.vue'
 import PurchaseOrderSkeleton from '../skeleton/PurchaseOrderSkeleton.vue'
+import { formatCurrency } from '@/lib/utils'
 
 const invoiceStore = usePOInvoiceStore();
 
@@ -126,7 +127,7 @@ onMounted(() => {
             <div class="flex w-full justify-between text-xs text-muted-foreground mt-1 items-baseline">
               <div class="flex gap-2 font-semibold text-base text-green-700">
                 <span class="font-mono"> {{ po.Moneda }}</span>
-                <span class="font-mono"> {{ po.Monto }}</span>
+                <span class="font-mono"> {{ formatCurrency(po.Monto, po.Moneda) }}</span>
               </div>
               <span>{{ po.FechaCreacion }}</span>
             </div>

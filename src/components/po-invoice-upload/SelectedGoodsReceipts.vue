@@ -10,6 +10,7 @@ import TableRow from '../ui/table/TableRow.vue'
 import TableHead from '../ui/table/TableHead.vue'
 import TableBody from '../ui/table/TableBody.vue'
 import TableCell from '../ui/table/TableCell.vue'
+import { formatCurrency } from '@/lib/utils'
 
 const invoiceStore = usePOInvoiceStore()
 </script>
@@ -50,7 +51,7 @@ const invoiceStore = usePOInvoiceStore()
                 </TableCell>
                 <TableCell class="py-2 px-3">{{ gr.Cantidad }}</TableCell>
                 <TableCell class="text-right py-2 px-3">
-                  {{ gr.ImporteMl }}
+                  {{ formatCurrency(gr.ImporteMl, gr.Moneda) }}
                 </TableCell>
               </TableRow>
             </template>
@@ -59,7 +60,9 @@ const invoiceStore = usePOInvoiceStore()
       </div>
       <div class="flex justify-between items-center font-semibold px-2 mt-3">
         <span>Total Seleccionado:</span>
-        <span class="text-lg"> {{ invoiceStore.selectedPO?.Moneda }} {{ invoiceStore.totalSelectedAmount }}</span>
+        <span class="text-lg"> {{ formatCurrency(invoiceStore.totalSelectedAmount, invoiceStore.selectedPO?.Moneda ||
+          'MXN')
+          }}</span>
       </div>
     </CardContent>
   </Card>

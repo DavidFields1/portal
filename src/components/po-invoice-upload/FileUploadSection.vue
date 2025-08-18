@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-vue-next";
 import { usePOInvoiceStore } from "@/stores/poInvoiceStore";
+import { formatCurrency } from "@/lib/utils";
 
 const invoiceStore = usePOInvoiceStore();
 const isDraggingXml = ref(false);
@@ -49,19 +50,13 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
   <div class="w-full space-y-8">
     <!-- Paso 1: Subir XML -->
     <div class="flex items-start gap-4">
-      <div
-        class="flex h-8 w-8 items-center justify-center rounded-full mt-1 shrink-0"
-        :class="{
-          'bg-primary text-primary-foreground':
-            invoiceStore.xmlValidationStatus !== 'success',
-          'bg-green-500 text-white':
-            invoiceStore.xmlValidationStatus === 'success',
-        }"
-      >
-        <CheckCircle2
-          v-if="invoiceStore.xmlValidationStatus === 'success'"
-          class="h-5 w-5"
-        />
+      <div class="flex h-8 w-8 items-center justify-center rounded-full mt-1 shrink-0" :class="{
+        'bg-primary text-primary-foreground':
+          invoiceStore.xmlValidationStatus !== 'success',
+        'bg-green-500 text-white':
+          invoiceStore.xmlValidationStatus === 'success',
+      }">
+        <CheckCircle2 v-if="invoiceStore.xmlValidationStatus === 'success'" class="h-5 w-5" />
         <span v-else class="font-bold">1</span>
       </div>
 
@@ -73,21 +68,13 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
 
         <!-- Área de Drop -->
         <div v-if="invoiceStore.xmlValidationStatus === 'idle'" class="mt-3">
-          <input
-            id="xml-input"
-            type="file"
-            class="hidden"
-            accept=".xml,text/xml"
-            @change="(e) => handleFileSelect(e, 'xml')"
-          />
+          <input id="xml-input" type="file" class="hidden" accept=".xml,text/xml"
+            @change="(e) => handleFileSelect(e, 'xml')" />
           <div
             class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
-            :class="{ 'border-primary bg-muted/50': isDraggingXml }"
-            @click="triggerXmlInput"
-            @dragover.prevent="isDraggingXml = true"
-            @dragleave.prevent="isDraggingXml = false"
-            @drop.prevent="(e) => handleDrop(e, 'xml')"
-          >
+            :class="{ 'border-primary bg-muted/50': isDraggingXml }" @click="triggerXmlInput"
+            @dragover.prevent="isDraggingXml = true" @dragleave.prevent="isDraggingXml = false"
+            @drop.prevent="(e) => handleDrop(e, 'xml')">
             <UploadCloud class="w-8 h-8 text-muted-foreground mb-2" />
             <p class="text-sm text-muted-foreground">
               <span class="font-semibold">Haz clic para buscar</span> o arrastra
@@ -97,73 +84,54 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
         </div>
 
         <!-- Estado: Cargando -->
-        <Alert
-          v-if="invoiceStore.xmlValidationStatus === 'loading'"
-          class="mt-3"
-        >
+        <Alert v-if="invoiceStore.xmlValidationStatus === 'loading'" class="mt-3">
           <Loader2 class="h-4 w-4 animate-spin" />
           <AlertTitle>Validando XML...</AlertTitle>
         </Alert>
 
         <!-- Estado: Éxito -->
-        <Alert
-          v-if="invoiceStore.xmlValidationStatus === 'success'"
-          variant="default"
-          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-green-600 overflow-hidden"
-        >
+        <Alert v-if="invoiceStore.xmlValidationStatus === 'success'" variant="default"
+          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-green-600 overflow-hidden">
           <div class="flex items-start sm:items-center overflow-hidden">
             <CheckCircle2 class="h-4 w-4 shrink-0 mt-1 sm:mt-0" />
             <div class="ml-3 min-w-0">
               <AlertTitle class="text-green-600 font-bold">
                 ¡XML Validado!
               </AlertTitle>
-              <AlertDescription
-                class="text-xs whitespace-normal break-words"
-              >
+              <AlertDescription class="text-xs whitespace-normal break-words">
                 {{ invoiceStore.selectedXmlFile?.name }}
               </AlertDescription>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
-            @click="invoiceStore.removeFile('xml')"
-          >
+          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
+            @click="invoiceStore.removeFile('xml')">
             <X class="h-4 w-4" />
           </Button>
         </Alert>
 
         <!-- Estado: Desviación Detectada -->
-        <Alert
-          v-if="
-            invoiceStore.xmlValidationStatus === 'success' &&
-            invoiceStore.deviationInfo
-          "
-          variant="default"
-          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-amber-600 overflow-hidden"
-        >
+        <Alert v-if="
+          invoiceStore.xmlValidationStatus === 'success' &&
+          invoiceStore.deviationInfo
+        " variant="default"
+          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-amber-600 overflow-hidden">
           <div class="flex items-start sm:items-center overflow-hidden">
-            <AlertCircle
-              class="h-4 w-4 shrink-0 text-amber-600 mt-1 sm:mt-0"
-            />
+            <AlertCircle class="h-4 w-4 shrink-0 text-amber-600 mt-1 sm:mt-0" />
             <div class="ml-3 min-w-0">
               <AlertTitle class="text-amber-600 font-bold">
                 Desviación Detectada
               </AlertTitle>
-              <AlertDescription
-                class="text-xs whitespace-normal break-words"
-              >
+              <AlertDescription class="text-xs whitespace-normal break-words">
                 Diferencia de
                 {{
-                  invoiceStore.formatCurrency(
+                  formatCurrency(
                     invoiceStore.deviationInfo.desviacion_permitida,
                     invoiceStore.invoiceData.moneda
                   )
                 }}
                 (Tolerancia:
                 {{
-                  invoiceStore.formatCurrency(
+                  formatCurrency(
                     invoiceStore.deviationInfo.desviacion_permitida,
                     invoiceStore.invoiceData.moneda
                   )
@@ -171,41 +139,28 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
               </AlertDescription>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
-            @click="invoiceStore.removeFile('xml')"
-          >
+          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
+            @click="invoiceStore.removeFile('xml')">
             <X class="h-4 w-4" />
           </Button>
         </Alert>
 
         <!-- Estado: Error -->
-        <Alert
-          v-if="invoiceStore.xmlValidationStatus === 'error'"
-          variant="destructive"
-          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-red-600 overflow-hidden"
-        >
+        <Alert v-if="invoiceStore.xmlValidationStatus === 'error'" variant="destructive"
+          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-red-600 overflow-hidden">
           <div class="flex items-start sm:items-center overflow-hidden">
             <AlertCircle class="h-4 w-4 shrink-0 mt-1 sm:mt-0" />
             <div class="ml-3 min-w-0">
               <AlertTitle class="text-red-600 font-bold">
                 Error de Validación
               </AlertTitle>
-              <AlertDescription
-                class="whitespace-normal break-words"
-              >
+              <AlertDescription class="whitespace-normal break-words">
                 {{ invoiceStore.xmlValidationError }}
               </AlertDescription>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
-            @click="invoiceStore.removeFile('xml')"
-          >
+          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
+            @click="invoiceStore.removeFile('xml')">
             <X class="h-4 w-4" />
           </Button>
         </Alert>
@@ -214,62 +169,42 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
 
     <!-- Paso 2: Subir PDF -->
     <div class="flex items-start gap-4">
-      <div
-        class="flex h-8 w-8 items-center justify-center rounded-full mt-1 shrink-0"
-        :class="{
-          'bg-muted text-muted-foreground':
-            invoiceStore.xmlValidationStatus !== 'success',
-          'bg-primary text-primary-foreground':
-            invoiceStore.xmlValidationStatus === 'success' &&
-            !invoiceStore.selectedPdfFile,
-          'bg-green-500 text-white':
-            invoiceStore.xmlValidationStatus === 'success' &&
-            invoiceStore.selectedPdfFile,
-        }"
-      >
-        <CheckCircle2
-          v-if="
-            invoiceStore.xmlValidationStatus === 'success' &&
-            invoiceStore.selectedPdfFile
-          "
-          class="h-5 w-5"
-        />
+      <div class="flex h-8 w-8 items-center justify-center rounded-full mt-1 shrink-0" :class="{
+        'bg-muted text-muted-foreground':
+          invoiceStore.xmlValidationStatus !== 'success',
+        'bg-primary text-primary-foreground':
+          invoiceStore.xmlValidationStatus === 'success' &&
+          !invoiceStore.selectedPdfFile,
+        'bg-green-500 text-white':
+          invoiceStore.xmlValidationStatus === 'success' &&
+          invoiceStore.selectedPdfFile,
+      }">
+        <CheckCircle2 v-if="
+          invoiceStore.xmlValidationStatus === 'success' &&
+          invoiceStore.selectedPdfFile
+        " class="h-5 w-5" />
         <span v-else class="font-bold">2</span>
       </div>
 
       <div class="flex-1">
-        <h3
-          class="font-semibold text-lg"
-          :class="{
-            'text-muted-foreground':
-              invoiceStore.xmlValidationStatus !== 'success',
-          }"
-        >
+        <h3 class="font-semibold text-lg" :class="{
+          'text-muted-foreground':
+            invoiceStore.xmlValidationStatus !== 'success',
+        }">
           2. Subir Comprobante (PDF)
         </h3>
 
-        <div
-          v-if="
-            invoiceStore.xmlValidationStatus === 'success' &&
-            !invoiceStore.selectedPdfFile
-          "
-          class="mt-3"
-        >
-          <input
-            id="pdf-input"
-            type="file"
-            class="hidden"
-            accept=".pdf,image/*"
-            @change="(e) => handleFileSelect(e, 'pdf')"
-          />
+        <div v-if="
+          invoiceStore.xmlValidationStatus === 'success' &&
+          !invoiceStore.selectedPdfFile
+        " class="mt-3">
+          <input id="pdf-input" type="file" class="hidden" accept=".pdf,image/*"
+            @change="(e) => handleFileSelect(e, 'pdf')" />
           <div
             class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
-            :class="{ 'border-primary bg-muted/50': isDraggingPdf }"
-            @click="triggerPdfInput"
-            @dragover.prevent="isDraggingPdf = true"
-            @dragleave.prevent="isDraggingPdf = false"
-            @drop.prevent="(e) => handleDrop(e, 'pdf')"
-          >
+            :class="{ 'border-primary bg-muted/50': isDraggingPdf }" @click="triggerPdfInput"
+            @dragover.prevent="isDraggingPdf = true" @dragleave.prevent="isDraggingPdf = false"
+            @drop.prevent="(e) => handleDrop(e, 'pdf')">
             <UploadCloud class="w-8 h-8 text-muted-foreground mb-2" />
             <p class="text-sm text-muted-foreground">
               <span class="font-semibold">Haz clic para buscar</span> o arrastra
@@ -278,33 +213,24 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
           </div>
         </div>
 
-        <Alert
-          v-if="
-            invoiceStore.xmlValidationStatus === 'success' &&
-            invoiceStore.selectedPdfFile
-          "
-          variant="default"
-          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-green-600 overflow-hidden"
-        >
+        <Alert v-if="
+          invoiceStore.xmlValidationStatus === 'success' &&
+          invoiceStore.selectedPdfFile
+        " variant="default"
+          class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between border border-green-600 overflow-hidden">
           <div class="flex items-start sm:items-center overflow-hidden">
             <CheckCircle2 class="h-4 w-4 shrink-0 mt-1 sm:mt-0" />
             <div class="ml-3 min-w-0">
               <AlertTitle class="text-green-600 font-bold">
                 ¡PDF Cargado!
               </AlertTitle>
-              <AlertDescription
-                class="text-xs whitespace-normal break-words"
-              >
+              <AlertDescription class="text-xs whitespace-normal break-words">
                 {{ invoiceStore.selectedPdfFile.name }}
               </AlertDescription>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
-            @click="invoiceStore.removeFile('pdf')"
-          >
+          <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0 mt-2 sm:mt-0"
+            @click="invoiceStore.removeFile('pdf')">
             <X class="h-4 w-4" />
           </Button>
         </Alert>
@@ -313,20 +239,10 @@ const triggerPdfInput = () => document.getElementById("pdf-input")?.click();
 
     <!-- Botones de navegación -->
     <div class="flex space-x-2 pt-4">
-      <Button
-        variant="outline"
-        size="sm"
-        class="flex-1"
-        @click="invoiceStore.prevStep"
-      >
+      <Button variant="outline" size="sm" class="flex-1" @click="invoiceStore.prevStep">
         ← Volver
       </Button>
-      <Button
-        size="sm"
-        class="flex-1"
-        :disabled="!invoiceStore.canProceedToStep3"
-        @click="invoiceStore.nextStep"
-      >
+      <Button size="sm" class="flex-1" :disabled="!invoiceStore.canProceedToStep3" @click="invoiceStore.nextStep">
         Continuar →
       </Button>
     </div>

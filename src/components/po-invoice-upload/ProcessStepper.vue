@@ -7,6 +7,7 @@ import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
 import FileUploadSection from './FileUploadSection.vue'
 import InvoiceDataForm from './InvoiceDataForm.vue'
 import ConfirmationStep from './ConfirmationStep.vue'
+import { formatCurrency } from '@/lib/utils'
 
 const invoiceStore = usePOInvoiceStore()
 </script>
@@ -61,18 +62,20 @@ const invoiceStore = usePOInvoiceStore()
       <!-- Paso 2: Subir Factura -->
       <div v-if="invoiceStore.currentStepIndex === 2">
         <FileUploadSection />
-        
+
         <!-- Indicador de desviación -->
-        <!-- <div v-if="invoiceStore.deviationInfo" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div v-if="invoiceStore.deviationInfo" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
             <span class="text-sm font-medium text-amber-700">Desviación Detectada</span>
           </div>
           <p class="text-xs text-amber-600 mt-1">
-            Se aplicó una tolerancia de {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
-            para una diferencia de {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+            Se aplicó una tolerancia de {{ formatCurrency(invoiceStore.deviationInfo.desviacion_permitida,
+              invoiceStore.deviationInfo.moneda) }}
+            para una diferencia de {{ formatCurrency(invoiceStore.deviationInfo.desviacion_permitida,
+              invoiceStore.deviationInfo.moneda) }}
           </p>
-        </div> -->
+        </div>
       </div>
 
       <!-- Paso 3: Datos de Factura (solo si la moneda no es MXN) -->

@@ -23,6 +23,7 @@ import { InvoiceDataSchema } from '@/schemas/invoiceDataSchema'
 import type { InvoiceData } from '@/schemas/invoiceSchemas'
 import { useSociedadesSAPQuery } from '@/composables/useCatalogoSAP'
 import { watch, ref, computed } from 'vue'
+import { formatCurrency } from '@/lib/utils'
 
 const invoiceStore = usePOInvoiceStore()
 
@@ -105,6 +106,9 @@ watch(
         <Input id="importe" type="number" step="0.01" :model-value="form.importe"
           @update:model-value="form.importe = Number($event) || 0" placeholder="Ej: 1160.00"
           @blur="validateField('importe')" :class="{ 'border-red-500': errors.importe }" />
+        <p v-if="form.importe > 0" class="text-xs text-muted-foreground">
+          {{ formatCurrency(form.importe, form.moneda) }}
+        </p>
         <p v-if="errors.importe" class="text-xs text-red-500">
           {{ errors.importe }}
         </p>

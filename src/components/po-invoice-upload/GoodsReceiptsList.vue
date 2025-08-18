@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FileText, OctagonAlertIcon, UserIcon } from 'lucide-vue-next'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
 import GoodsReceiptSkeleton from '../skeleton/GoodsReceiptSkeleton.vue'
+import { formatCurrency } from '@/lib/utils'
 // import Skeleton from '../ui/skeleton/Skeleton.vue'
 // import GoodsReceiptSkeleton from '../skeleton/GoodsReceiptSkeleton.vue'
 
@@ -50,10 +51,15 @@ const invoiceStore = usePOInvoiceStore()
                   <Label>Entrada de Mercancia</Label>
                   <span class="text-sm font-bold">{{ gr.DocMaterial }}</span>
                 </div>
-                <span class="font-mono text-sm font-semibold text-green-700">
-                  {{ gr.Moneda }}
-                  {{ gr.ImporteMl }}
-                </span>
+                <div>
+
+                  <span class="font-mono text-sm font-semibold text-green-700 mr-2">
+                    {{ gr.Moneda }}
+                  </span>
+                  <span class="font-mono text-sm font-semibold text-green-700">
+                    {{ formatCurrency(gr.ImporteMl, gr.Moneda) }}
+                  </span>
+                </div>
               </div>
               <p class="font-bold text-xl my-2 text-primary">{{ gr.Material }}</p>
               <!-- <div class="flex justify-between text-xs text-muted-foreground mt-2">
@@ -62,7 +68,7 @@ const invoiceStore = usePOInvoiceStore()
               <div class="flex my-2 justify-between">
                 <div>
                   <Label class="mb-1">Precio Unitario</Label>
-                  <span class="font-bold">{{ gr.PrecioUnit }}</span>
+                  <span class="font-bold">{{ formatCurrency(gr.PrecioUnit, gr.Moneda) }}</span>
                 </div>
                 <div>
                   <Label class="mb-1">Cantidad</Label>

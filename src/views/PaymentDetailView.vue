@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { formatCurrency } from '@/lib/utils'
 import {
 	Table,
 	TableBody,
@@ -118,8 +119,7 @@ const formatDate = (dateString: string) => {
 	}
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+// Usar la función importada de utils
 
 const getStatusBadgeVariant = (status: string) => {
 	switch (status) {
@@ -154,11 +154,7 @@ onMounted(() => {
 <template>
 	<div class="container mx-auto py-6 md:py-10">
 		<!-- Botón de regreso -->
-		<Button
-			variant="outline"
-			class="mb-6 flex items-center gap-2 cursor-pointer"
-			@click="goBack"
-		>
+		<Button variant="outline" class="mb-6 flex items-center gap-2 cursor-pointer" @click="goBack">
 			<ArrowLeft class="h-4 w-4" />
 			Regresar
 		</Button>
@@ -171,10 +167,7 @@ onMounted(() => {
 						<CardTitle class="text-2xl">
 							Pago: <span class="text-primary">{{ pago.docContable }}</span>
 						</CardTitle>
-						<Badge
-							:variant="getStatusBadgeVariant(pago.estatus)"
-							class="text-base capitalize"
-						>
+						<Badge :variant="getStatusBadgeVariant(pago.estatus)" class="text-base capitalize">
 							<component :is="getStatusIcon(pago.estatus)" class="h-4 w-4 mr-1" />
 							{{ pago.estatus }}
 						</Badge>
@@ -356,11 +349,7 @@ onMounted(() => {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								<TableRow
-									v-for="factura in facturas"
-									:key="factura.uuid"
-									class="hover:bg-muted/20"
-								>
+								<TableRow v-for="factura in facturas" :key="factura.uuid" class="hover:bg-muted/20">
 									<TableCell class="font-mono text-xs">{{
 										factura.uuid
 									}}</TableCell>
@@ -374,11 +363,8 @@ onMounted(() => {
 									<TableCell class="text-center">{{
 										factura.ejercicioFiscal
 									}}</TableCell>
-									<TableCell
-										class="max-w-[150px] truncate"
-										:title="factura.emisor"
-										>{{ factura.emisor }}</TableCell
-									>
+									<TableCell class="max-w-[150px] truncate" :title="factura.emisor">{{ factura.emisor
+										}}</TableCell>
 									<TableCell class="text-right font-mono font-medium">
 										{{ formatCurrency(factura.importe, factura.moneda) }}
 									</TableCell>
@@ -387,12 +373,9 @@ onMounted(() => {
 										formatDate(factura.fechaTimbrado)
 									}}</TableCell>
 									<TableCell class="text-center">
-										<Button
-											variant="ghost"
-											size="sm"
+										<Button variant="ghost" size="sm"
 											class="text-primary hover:text-primary/80 hover:bg-primary/10"
-											@click="goToFacturaDetail(factura.uuid)"
-										>
+											@click="goToFacturaDetail(factura.uuid)">
 											<ExternalLink class="h-4 w-4 mr-1" />
 											Ver Detalle
 										</Button>

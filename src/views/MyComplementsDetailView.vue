@@ -36,6 +36,7 @@ import DropdownMenu from '@/components/ui/dropdown-menu/DropdownMenu.vue'
 import DropdownMenuTrigger from '@/components/ui/dropdown-menu/DropdownMenuTrigger.vue'
 import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
 import DropdownMenuItem from '@/components/ui/dropdown-menu/DropdownMenuItem.vue'
+import { formatCurrency } from '@/lib/utils'
 
 // Obtener el router para la navegación
 const router = useRouter()
@@ -109,8 +110,7 @@ const formatDate = (dateString: string) => {
 	}
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+// Usar la función importada de utils
 
 const getStatusBadgeVariant = (status: string) => {
 	switch (status) {
@@ -157,11 +157,7 @@ const downloadXML = () => {
 	<div class="container mx-auto py-6 md:py-10">
 		<!-- Fila de botones de acción -->
 		<div class="flex justify-between items-center mb-6">
-			<Button
-				variant="outline"
-				class="flex items-center gap-2 cursor-pointer"
-				@click="goBack"
-			>
+			<Button variant="outline" class="flex items-center gap-2 cursor-pointer" @click="goBack">
 				<ArrowLeft class="h-4 w-4" />
 				Regresar
 			</Button>
@@ -195,14 +191,8 @@ const downloadXML = () => {
 							Complemento de Pago:
 							<span class="text-primary font-mono">{{ complemento.num }}</span>
 						</CardTitle>
-						<Badge
-							:variant="getStatusBadgeVariant(complemento.estatus)"
-							class="text-base capitalize"
-						>
-							<component
-								:is="getStatusIcon(complemento.estatus)"
-								class="h-4 w-4 mr-1"
-							/>
+						<Badge :variant="getStatusBadgeVariant(complemento.estatus)" class="text-base capitalize">
+							<component :is="getStatusIcon(complemento.estatus)" class="h-4 w-4 mr-1" />
 							{{ complemento.estatus }}
 						</Badge>
 					</div>
@@ -341,11 +331,8 @@ const downloadXML = () => {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								<TableRow
-									v-for="doc in documentosRelacionados"
-									:key="doc.uuidFactura"
-									class="hover:bg-muted/20"
-								>
+								<TableRow v-for="doc in documentosRelacionados" :key="doc.uuidFactura"
+									class="hover:bg-muted/20">
 									<TableCell class="font-mono text-xs">{{
 										doc.uuidFactura
 									}}</TableCell>
@@ -362,9 +349,7 @@ const downloadXML = () => {
 									<TableCell class="text-right font-mono">
 										{{ formatCurrency(doc.impSaldoAnt, doc.moneda) }}
 									</TableCell>
-									<TableCell
-										class="text-right font-mono font-medium text-primary"
-									>
+									<TableCell class="text-right font-mono font-medium text-primary">
 										{{ formatCurrency(doc.impPagado, doc.moneda) }}
 									</TableCell>
 									<TableCell class="text-right font-mono">

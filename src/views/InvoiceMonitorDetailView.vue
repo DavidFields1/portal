@@ -39,6 +39,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { type DateValue, getLocalTimeZone } from '@internationalized/date'
 import { toast } from 'vue-sonner'
+import { formatCurrency } from '@/lib/utils'
 
 // --- INTERFACES Y DATOS SIMULADOS ---
 // NOTA: En una app real, estos datos vendrían de un store (Pinia) o una llamada a API.
@@ -398,8 +399,7 @@ const contabilizar = () => {
 	toast.success('¡Factura contabilizada exitosamente! (Simulado)')
 }
 
-const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
+// Usar la función importada de utils
 const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 
 watch(prorationType, (newType) => {
@@ -429,9 +429,7 @@ watch(prorationType, (newType) => {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div
-						class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm"
-					>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
 						<div class="space-y-2">
 							<div class="flex items-start gap-3">
 								<Fingerprint class="h-5 w-5 mt-1 text-muted-foreground" />
@@ -484,25 +482,21 @@ watch(prorationType, (newType) => {
 							</div>
 							<div class="flex justify-between">
 								<span class="text-muted-foreground">Descuentos:</span>
-								<span class="font-mono text-red-500"
-									>-{{
-										formatCurrency(
-											selectedInvoice.descuentos,
-											selectedInvoice.moneda,
-										)
-									}}</span
-								>
+								<span class="font-mono text-red-500">-{{
+									formatCurrency(
+										selectedInvoice.descuentos,
+										selectedInvoice.moneda,
+									)
+								}}</span>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-muted-foreground">Retenciones:</span>
-								<span class="font-mono text-red-500"
-									>-{{
-										formatCurrency(
-											selectedInvoice.retenciones,
-											selectedInvoice.moneda,
-										)
-									}}</span
-								>
+								<span class="font-mono text-red-500">-{{
+									formatCurrency(
+										selectedInvoice.retenciones,
+										selectedInvoice.moneda,
+									)
+								}}</span>
 							</div>
 						</div>
 					</div>
@@ -531,17 +525,14 @@ watch(prorationType, (newType) => {
 						<Label>Fecha</Label>
 						<Popover>
 							<PopoverTrigger as-child>
-								<Button
-									variant="outline"
-									class="w-full justify-start text-left font-normal"
-									:class="!fechaContabilizacion && 'text-muted-foreground'"
-								>
+								<Button variant="outline" class="w-full justify-start text-left font-normal"
+									:class="!fechaContabilizacion && 'text-muted-foreground'">
 									<CalendarIcon class="mr-2 h-4 w-4" />
 									<span>{{
 										fechaContabilizacion
 											? df.format(
-													fechaContabilizacion.toDate(getLocalTimeZone()),
-												)
+												fechaContabilizacion.toDate(getLocalTimeZone()),
+											)
 											: 'Seleccionar fecha'
 									}}</span>
 								</Button>
@@ -561,14 +552,10 @@ watch(prorationType, (newType) => {
 						<CardTitle>Prorrateo de Conceptos</CardTitle>
 						<div class="flex items-center space-x-2">
 							<Label for="proration-type">Importe</Label>
-							<Switch
-								id="proration-type"
-								:checked="prorationType === 'porcentaje'"
-								@update:checked="
-									(val: boolean) =>
-										(prorationType = val ? 'porcentaje' : 'importe')
-								"
-							/>
+							<Switch id="proration-type" :checked="prorationType === 'porcentaje'" @update:checked="
+								(val: boolean) =>
+									(prorationType = val ? 'porcentaje' : 'importe')
+							" />
 							<Label for="proration-type">Porcentaje</Label>
 						</div>
 					</div>
@@ -586,18 +573,11 @@ watch(prorationType, (newType) => {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							<template
-								v-for="concept in selectedInvoice.conceptos"
-								:key="concept.id"
-							>
-								<TableRow
-									@click="toggleConceptExpansion(concept.id)"
-									class="cursor-pointer"
-								>
-									<TableCell
-										><Button variant="ghost" size="icon" class="h-8 w-8">
-											<ChevronsUpDown class="h-4 w-4" /> </Button
-									></TableCell>
+							<template v-for="concept in selectedInvoice.conceptos" :key="concept.id">
+								<TableRow @click="toggleConceptExpansion(concept.id)" class="cursor-pointer">
+									<TableCell><Button variant="ghost" size="icon" class="h-8 w-8">
+											<ChevronsUpDown class="h-4 w-4" />
+										</Button></TableCell>
 									<TableCell class="font-medium">{{
 										concept.descripcion
 									}}</TableCell>
@@ -609,28 +589,19 @@ watch(prorationType, (newType) => {
 										formatCurrency(concept.importe, selectedInvoice.moneda)
 									}}</TableCell>
 									<TableCell>
-										<Badge
-											:variant="
-												concept.estatus === 'Completado'
-													? 'success'
-													: 'destructive'
-											"
-											>{{ concept.estatus }}
+										<Badge :variant="concept.estatus === 'Completado'
+												? 'success'
+												: 'destructive'
+											">{{ concept.estatus }}
 										</Badge>
 									</TableCell>
 								</TableRow>
 								<TableRow v-if="expandedConceptId === concept.id">
 									<TableCell colspan="6" class="p-4 bg-muted/50">
 										<div class="space-y-4">
-											<div
-												v-if="concept.prorrateos.length > 0"
-												class="space-y-2"
-											>
-												<div
-													v-for="p in concept.prorrateos"
-													:key="p.id"
-													class="flex items-center justify-between p-2 border rounded-md"
-												>
+											<div v-if="concept.prorrateos.length > 0" class="space-y-2">
+												<div v-for="p in concept.prorrateos" :key="p.id"
+													class="flex items-center justify-between p-2 border rounded-md">
 													<div class="text-xs">
 														<p>
 															<strong>Cta:</strong>
@@ -651,37 +622,24 @@ watch(prorationType, (newType) => {
 														</p>
 													</div>
 													<div class="flex gap-2">
-														<Button
-															variant="outline"
-															size="icon"
-															class="h-7 w-7"
-															@click="editProrateo(concept.id, p)"
-														>
+														<Button variant="outline" size="icon" class="h-7 w-7"
+															@click="editProrateo(concept.id, p)">
 															<Pencil class="h-4 w-4" />
 														</Button>
-														<Button
-															variant="destructive"
-															size="icon"
-															class="h-7 w-7"
+														<Button variant="destructive" size="icon" class="h-7 w-7"
 															@click="
 																deleteProrateo(concept.id, p.id)
-															"
-														>
+																">
 															<Trash2 class="h-4 w-4" />
 														</Button>
 													</div>
 												</div>
 											</div>
-											<p
-												v-else
-												class="text-sm text-center text-muted-foreground"
-											>
+											<p v-else class="text-sm text-center text-muted-foreground">
 												No hay prorrateos para este concepto.
 											</p>
-											<div
-												v-if="showProrateoFormForConceptId === concept.id"
-												class="p-4 border-t space-y-4"
-											>
+											<div v-if="showProrateoFormForConceptId === concept.id"
+												class="p-4 border-t space-y-4">
 												<h4 class="font-semibold">
 													{{
 														editingProrateoId ? 'Editar' : 'Nuevo'
@@ -696,12 +654,9 @@ watch(prorationType, (newType) => {
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
-																<SelectItem
-																	v-for="cta in cuentasContables"
-																	:key="cta.value"
-																	:value="cta.value"
-																	>{{ cta.label }}</SelectItem
-																>
+																<SelectItem v-for="cta in cuentasContables"
+																	:key="cta.value" :value="cta.value">{{ cta.label }}
+																</SelectItem>
 															</SelectContent>
 														</Select>
 													</div>
@@ -712,12 +667,8 @@ watch(prorationType, (newType) => {
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
-																<SelectItem
-																	v-for="cc in centrosCosto"
-																	:key="cc"
-																	:value="cc"
-																	>{{ cc }}</SelectItem
-																>
+																<SelectItem v-for="cc in centrosCosto" :key="cc"
+																	:value="cc">{{ cc }}</SelectItem>
 															</SelectContent>
 														</Select>
 													</div>
@@ -728,11 +679,8 @@ watch(prorationType, (newType) => {
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
-																<SelectItem
-																	v-for="imp in indicadoresImpuesto"
-																	:key="imp"
-																	:value="imp"
-																	>{{ imp }}
+																<SelectItem v-for="imp in indicadoresImpuesto"
+																	:key="imp" :value="imp">{{ imp }}
 																</SelectItem>
 															</SelectContent>
 														</Select>
@@ -741,44 +689,25 @@ watch(prorationType, (newType) => {
 												<div class="grid grid-cols-2 gap-4">
 													<div class="space-y-1">
 														<Label>Importe</Label>
-														<Input
-															type="number"
-															v-model="newProrateoImporte!"
-															:disabled="prorationType !== 'importe'"
-														/>
+														<Input type="number" v-model="newProrateoImporte!"
+															:disabled="prorationType !== 'importe'" />
 													</div>
 													<div class="space-y-1">
 														<Label>Porcentaje</Label>
-														<Input
-															type="number"
-															v-model="newProrateoPorcentaje!"
-															:disabled="
-																prorationType !== 'porcentaje'
-															"
-														/>
+														<Input type="number" v-model="newProrateoPorcentaje!" :disabled="prorationType !== 'porcentaje'
+															" />
 													</div>
 												</div>
 												<div class="flex justify-end gap-2">
-													<Button
-														variant="ghost"
-														@click="cancelProrateoForm"
-														>Cancelar</Button
-													>
-													<Button @click="saveProrateo(concept.id)"
-														>Guardar Prorrateo</Button
-													>
+													<Button variant="ghost"
+														@click="cancelProrateoForm">Cancelar</Button>
+													<Button @click="saveProrateo(concept.id)">Guardar Prorrateo</Button>
 												</div>
 											</div>
-											<Button
-												v-if="
-													showProrateoFormForConceptId !== concept.id &&
-													concept.estatus !== 'Completado'
-												"
-												variant="outline"
-												size="sm"
-												class="w-full"
-												@click="showAddProrateoForm(concept.id)"
-											>
+											<Button v-if="
+												showProrateoFormForConceptId !== concept.id &&
+												concept.estatus !== 'Completado'
+											" variant="outline" size="sm" class="w-full" @click="showAddProrateoForm(concept.id)">
 												<PlusCircle class="mr-2 h-4 w-4" /> Agregar
 												Prorrateo
 											</Button>
