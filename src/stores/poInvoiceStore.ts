@@ -18,6 +18,9 @@ import axiosInstance from '@/config/axiosInstance';
 import { ValidateRfcResponseSchema, type ValidateRfcResponse } from '@/schemas/validateRfc';
 import { queryClient } from '@/main';
 import { useAuthStore } from './authStore';
+import { DeviationsResponseSchema, type Deviation } from '@/schemas/deviationSchema';
+
+// Interfaz para la información de desviación
 
 // Interfaz para los datos extraídos del XML
 interface ExtractedXmlData {
@@ -118,6 +121,8 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 	const xmlValidationStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
 	const xmlValidationError = ref<string | null>(null);
+
+	const deviationInfo = ref<Deviation | null>(null);
 
 	const authStore = useAuthStore();
 
@@ -441,6 +446,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 		xmlValidationStatus.value = 'idle';
 		xmlValidationError.value = null;
+		deviationInfo.value = null;
 
 		selectedSupplierId.value = null;
 		currentSupplierName.value = null;
@@ -484,10 +490,59 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			// }
 
 			// Validación #3: Importes (Subtotal vs Entradas de Mercancía)
-			if (extractedData.subtotal !== totalSelectedAmount.value) {
-				throw new Error(
-					'El subtotal del XML no coincide con la suma de las entradas seleccionadas.',
-				);
+			const difference = Math.abs(extractedData.subtotal - totalSelectedAmount.value);
+			console.log('subtotal', extractedData.subtotal);
+			console.log('total entradas', totalSelectedAmount.value);
+			console.log('DIFFERENCE', difference);
+
+			if (difference > 0) {
+				// Consultar servicio de desviaciones por moneda
+				try {
+					const deviationResponse = await queryClient.fetchQuery({
+						queryKey: ['deviations', extractedData.moneda],
+						queryFn: async () => {
+							const { data } = await axiosInstance.get(
+								`/configuracion/desviacion/moneda?moneda=${extractedData.moneda}`,
+							);
+							console.log('DEVIATION DATA', data);
+							const parsedData = DeviationsResponseSchema.parse(data);
+							return parsedData.object;
+						},
+					});
+
+					// Si la diferencia excede la tolerancia, lanzar error
+					if (difference > deviationResponse.desviacion_permitida) {
+						throw new Error(
+							`La diferencia entre el subtotal del XML (${extractedData.subtotal}) y las entradas seleccionadas (${totalSelectedAmount.value}) excede la tolerancia permitida de ${deviationResponse.desviacion_permitida}.`,
+						);
+					}
+
+					// Si está dentro de la tolerancia, guardar información de desviación
+					deviationInfo.value = {
+						id_desviacion_moneda: deviationResponse.id_desviacion_moneda,
+						descripcion: deviationResponse.descripcion,
+						moneda: extractedData.moneda,
+						desviacion_permitida: deviationResponse.desviacion_permitida,
+						estatus: deviationResponse.estatus,
+						fecha_creacion: deviationResponse.fecha_creacion,
+						fecha_modificacion: deviationResponse.fecha_modificacion,
+					};
+
+					toast.warning(
+						`Diferencia de ${formatCurrency(difference, extractedData.moneda)} detectada, pero dentro de la tolerancia permitida.`,
+					);
+				} catch (error) {
+					// Si el servicio de desviaciones falla, usar validación estricta
+					console.error('Error al consultar desviaciones:', error);
+					if (difference > 0) {
+						throw new Error(
+							'El subtotal del XML no coincide con la suma de las entradas seleccionadas.',
+						);
+					}
+				}
+			} else {
+				// Limpiar información de desviación si no hay diferencia
+				deviationInfo.value = null;
 			}
 
 			// Validación #4: Fecha de Timbrado (mismo mes y año)
@@ -677,6 +732,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		xmlValidationStatus,
 		xmlValidationError,
 		validateAndProcessXml,
+		deviationInfo,
 
 		// Getters
 		selectedPO,

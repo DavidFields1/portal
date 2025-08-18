@@ -12,7 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
-import type { Step } from '@/views/POInvoiceUploadView.vue'
+import type { Step } from '@/schemas/invoiceSchemas'
 
 // Definimos las props que este componente recibirá desde la vista principal
 const props = defineProps({
@@ -34,6 +34,14 @@ const props = defineProps({
 			sociedad: string
 		},
 		required: true,
+	},
+	deviationInfo: {
+		type: Object as () => {
+			difference: number
+			tolerance: number
+			currency: string
+		} | null,
+		default: null,
 	},
 
 	onNextStep: { type: Function, required: true },
@@ -336,6 +344,29 @@ const handleXMLFileChange = (event: Event) => {
 					<div class="flex justify-between">
 						<span class="text-muted-foreground">Sociedad:</span
 						><span class="font-medium">{{ props.invoiceData.sociedad }}</span>
+					</div>
+
+					<!-- Información de desviación si existe -->
+					<div v-if="props.deviationInfo" class="space-y-2">
+						<Separator />
+						<div class="flex items-center gap-2">
+							<div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+							<span class="text-xs font-medium text-amber-600">Desviación Aplicada</span>
+						</div>
+						<div class="space-y-1 text-xs">
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">Diferencia:</span>
+								<span class="font-medium text-amber-600">
+									{{ props.formatCurrency(props.deviationInfo.difference, props.deviationInfo.currency) }}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-muted-foreground">Tolerancia:</span>
+								<span class="font-medium">
+									{{ props.formatCurrency(props.deviationInfo.tolerance, props.deviationInfo.currency) }}
+								</span>
+							</div>
+						</div>
 					</div>
 				</div>
 				<div class="flex space-x-2 pt-4">

@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
+import { AlertCircle } from 'lucide-vue-next'
 
 const invoiceStore = usePOInvoiceStore()
 const showConfirmDialog = ref(false)
@@ -37,7 +38,7 @@ const handleConfirmSubmit = async () => {
     <h4 class="font-semibold">Confirmación Final</h4>
     <div class="space-y-3 text-sm">
       <div class="flex justify-between">
-        <span class="text-muted-foreground">Proveedor:</span>
+        <span class="text-muted-foreground mr-1">Proveedor:</span>
         <span class="font-medium">{{ invoiceStore.currentSupplierName }}</span>
       </div>
       <div class="flex justify-between">
@@ -82,6 +83,29 @@ const handleConfirmSubmit = async () => {
         <span class="text-muted-foreground">Sociedad:</span>
         <span class="font-medium">{{ invoiceStore.invoiceData.sociedad }}</span>
       </div>
+      
+      <!-- Información de desviación si existe -->
+      <div v-if="invoiceStore.deviationInfo" class="space-y-2">
+        <Separator />
+        <div class="flex items-center gap-2">
+          <AlertCircle class="h-4 w-4 text-amber-600" />
+          <span class="text-sm font-medium text-amber-600">Desviación Aplicada</span>
+        </div>
+        <div class="space-y-1 text-sm">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Diferencia:</span>
+            <span class="font-medium text-amber-600">
+              {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Tolerancia:</span>
+            <span class="font-medium">
+              {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Botones de navegación -->
@@ -123,6 +147,20 @@ const handleConfirmSubmit = async () => {
               <div class="flex justify-between">
                 <span class="text-muted-foreground">Folio:</span>
                 <span class="font-medium">{{ invoiceStore.invoiceData.folio }}</span>
+              </div>
+              
+              <!-- Información de desviación en el diálogo -->
+              <div v-if="invoiceStore.deviationInfo" class="space-y-1">
+                <div class="flex items-center gap-2 mt-2">
+                  <AlertCircle class="h-3 w-3 text-amber-600" />
+                  <span class="text-xs font-medium text-amber-600">Desviación Aplicada</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-muted-foreground">Diferencia:</span>
+                  <span class="font-medium text-amber-600">
+                    {{ invoiceStore.formatCurrency(invoiceStore.deviationInfo.desviacion_permitida, invoiceStore.deviationInfo.moneda) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

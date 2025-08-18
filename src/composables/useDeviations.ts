@@ -40,7 +40,7 @@ export function useDeviationsQuery(options: UseDeviationsQueryOptions = {}) {
 }
 
 // GET - Fetch deviation by Moneda
-export function useDeviationByIdQuery(
+export function useDeviationByCurrencyQuery(
 	moneda: Ref<string | null>,
 	options: UseDeviationsQueryOptions = {},
 ) {

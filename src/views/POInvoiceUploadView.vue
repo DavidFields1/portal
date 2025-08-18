@@ -24,6 +24,7 @@ const stepperProps = computed(() => ({
   selectedXmlFile: invoiceStore.selectedXmlFile,
   isSubmitting: invoiceStore.isSubmitting,
   formatCurrency: invoiceStore.formatCurrency,
+  deviationInfo: invoiceStore.deviationInfo,
 }))
 
 onMounted(() => {
