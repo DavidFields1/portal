@@ -670,10 +670,22 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 			// Crear FormData
 			const formData = new FormData();
-			formData.append('factura', JSON.stringify(factura));
-			formData.append('orden_compra', JSON.stringify(orden_compra));
-			formData.append('entradas_mercancia', JSON.stringify(entradas_mercancia));
-			formData.append('retenciones', JSON.stringify(retenciones));
+			formData.append(
+				'factura',
+				new Blob([JSON.stringify(factura)], { type: 'application/json' }),
+			);
+			formData.append(
+				'orden_compra',
+				new Blob([JSON.stringify(orden_compra)], { type: 'application/json' }),
+			);
+			formData.append(
+				'entradas_mercancia',
+				new Blob([JSON.stringify(entradas_mercancia)], { type: 'application/json' }),
+			);
+			formData.append(
+				'retenciones',
+				new Blob([JSON.stringify(retenciones)], { type: 'application/json' }),
+			);
 
 			// Adjuntar archivos PDF y XML como blobs
 			if (selectedPdfFile.value) {
