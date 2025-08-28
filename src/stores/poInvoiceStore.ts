@@ -400,45 +400,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		}
 	};
 
-	const submitInvoice = async () => {
-		if (isSubmitting.value) return;
-
-		try {
-			// Validar datos finales solo si necesitamos el paso de datos de factura
-			if (needsInvoiceDataStep.value) {
-				InvoiceDataSchema.parse(invoiceData.value);
-			}
-
-			if (!canProceedToStep3.value) {
-				throw new Error('Archivos faltantes');
-			}
-
-			if (selectedGRs.value.length === 0) {
-				throw new Error('No hay entradas seleccionadas');
-			}
-
-			isSubmitting.value = true;
-
-			// Simular API call
-			// await new Promise((resolve) => setTimeout(resolve, 2000));
-
-			toast.success('Factura cargada exitosamente', {
-				description: `Se procesaron ${selectedGRs.value.length} entradas de mercancía.`,
-			});
-
-			// Reset del estado
-			resetInvoiceProcess();
-		} catch (error: unknown) {
-			console.error('Error submitting invoice:', error);
-			toast.error('Error al cargar la factura', {
-				// @ts-expect-error asf
-				description: error.message || 'Por favor, inténtalo de nuevo más tarde.',
-			});
-		} finally {
-			isSubmitting.value = false;
-		}
-	};
-
 	const resetInvoiceProcess = () => {
 		selectedPdfFile.value = null;
 		selectedXmlFile.value = null;
@@ -484,9 +445,9 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			}
 
 			// Validación #2: Moneda
-			// if (extractedData.moneda !== selectedPO.value?.Moneda) {
-			// 	throw new Error('La moneda del XML no coincide con la de la Orden de Compra.');
-			// }
+			if (extractedData.moneda !== selectedPO.value?.Moneda) {
+				throw new Error('La moneda del XML no coincide con la de la Orden de Compra.');
+			}
 
 			// Validación #3: Importes (Subtotal vs Entradas de Mercancía)
 			const difference = Math.abs(extractedData.subtotal - totalSelectedAmount.value);
@@ -510,21 +471,21 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 					});
 
 					// Si la diferencia excede la tolerancia, lanzar error
-					if (difference > deviationResponse.desviacion_permitida) {
+					if (difference > deviationResponse[0].desviacion_permitida) {
 						throw new Error(
-							`La diferencia entre el subtotal del XML (${extractedData.subtotal}) y las entradas seleccionadas (${totalSelectedAmount.value}) excede la tolerancia permitida de ${deviationResponse.desviacion_permitida}.`,
+							`La diferencia entre el subtotal del XML (${extractedData.subtotal}) y las entradas seleccionadas (${totalSelectedAmount.value}) excede la tolerancia permitida de ${deviationResponse[0].desviacion_permitida}.`,
 						);
 					}
 
 					// Si está dentro de la tolerancia, guardar información de desviación
 					deviationInfo.value = {
-						id_desviacion_moneda: deviationResponse.id_desviacion_moneda,
-						descripcion: deviationResponse.descripcion,
+						id_desviacion_moneda: deviationResponse[0].id_desviacion_moneda,
+						descripcion: deviationResponse[0].descripcion,
 						moneda: extractedData.moneda,
-						desviacion_permitida: deviationResponse.desviacion_permitida,
-						estatus: deviationResponse.estatus,
-						fecha_creacion: deviationResponse.fecha_creacion,
-						fecha_modificacion: deviationResponse.fecha_modificacion,
+						desviacion_permitida: deviationResponse[0].desviacion_permitida,
+						estatus: deviationResponse[0].estatus,
+						fecha_creacion: deviationResponse[0].fecha_creacion,
+						fecha_modificacion: deviationResponse[0].fecha_modificacion,
 					};
 
 					toast.warning(
@@ -771,7 +732,7 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 		updateInvoiceData,
 		nextStep,
 		prevStep,
-		submitInvoice,
+		// submitInvoice,
 		resetInvoiceProcess,
 		autoConfigureProvider,
 	};
