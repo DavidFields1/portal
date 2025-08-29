@@ -285,7 +285,7 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			sociedad: invoiceData.value.sociedad,
 			conceptos: invoiceExtractedData.value.conceptos,
 			// El proveedor se identifica por el RFC emisor, no se envía un ID SAP
-			id_proveedor_sap: null,
+			id_proveedor_sap: '',
 		};
 
 		// 2. Crear el objeto FormData

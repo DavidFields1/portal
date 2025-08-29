@@ -1,231 +1,58 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { Search, Building, Fingerprint, Calendar as CalendarIcon } from 'lucide-vue-next'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-
-// --- INTERFACES Y DATOS ---
-// NOTA: En una app real, estos datos vendrían de un store (Pinia) o una llamada a API,
-// para no duplicarlos en cada vista.
-interface Prorateo {
-	id: string
-	cuentaContable: string
-	centroCosto: string
-	indicadorImpuesto: string
-	importe: number
-	porcentaje: number
-}
-
-interface Concepto {
-	id: string
-	descripcion: string
-	cantidad: number
-	unidad: string
-	valorUnitario: number
-	importe: number
-	estatus: 'Pendiente' | 'Completado'
-	prorrateos: Prorateo[]
-}
-
-interface Factura {
-	id: string
-	folio: string // Este será el "Folio de factura"
-	proveedor: string // NUEVO
-	sociedad: string
-	fecha: string
-	rfcEmisor: string
-	rfcReceptor: string // NUEVO
-	subtotal: number
-	impuestos: number // NUEVO
-	descuentos: number // NUEVO
-	retenciones: number // NUEVO
-	total: number
-	moneda: string
-	conceptos: Concepto[]
-}
-
-const allInvoices = ref<Factura[]>([
-	// Factura 1: Simple, consultoría
-	{
-		id: 'inv_001',
-		folio: 'F-2024-001',
-		proveedor: 'Consultoría Estratégica S.A.',
-		sociedad: '1000',
-		fecha: '2024-07-01',
-		rfcEmisor: 'CES120518XYZ',
-		rfcReceptor: 'CLI987654ABC',
-		subtotal: 15000,
-		impuestos: 2400,
-		descuentos: 0,
-		retenciones: 900, // Retención por servicios profesionales
-		total: 16500,
-		moneda: 'MXN',
-		conceptos: [
-			{
-				id: 'cpt_1a',
-				descripcion: 'Análisis de Mercado Q3',
-				cantidad: 1,
-				unidad: 'Servicio',
-				valorUnitario: 15000,
-				importe: 15000,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-		],
-	},
-	// Factura 2: Múltiples conceptos, productos de TI
-	{
-		id: 'inv_002',
-		folio: 'A-2024-105',
-		proveedor: 'Soluciones TI de México S.A. de C.V.',
-		sociedad: '2000',
-		fecha: '2024-07-05',
-		rfcEmisor: 'STM210510ABC',
-		rfcReceptor: 'CLI987654ABC',
-		subtotal: 8500,
-		impuestos: 1360,
-		descuentos: 500, // Descuento por paquete
-		retenciones: 0,
-		total: 9360,
-		moneda: 'MXN',
-		conceptos: [
-			{
-				id: 'cpt_2a',
-				descripcion: 'Licencia Anual Antivirus (10 Equipos)',
-				cantidad: 1,
-				unidad: 'Paquete',
-				valorUnitario: 5000,
-				importe: 5000,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-			{
-				id: 'cpt_2b',
-				descripcion: 'Soporte Técnico Remoto (5 Horas)',
-				cantidad: 1,
-				unidad: 'Servicio',
-				valorUnitario: 3500,
-				importe: 3500,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-		],
-	},
-	// Factura 3: En Dólares, materia prima
-	{
-		id: 'inv_003',
-		folio: 'B-2024-033',
-		proveedor: 'Aceros del Norte S. de R.L.',
-		sociedad: '1000',
-		fecha: '2024-07-08',
-		rfcEmisor: 'ANO050822DEF',
-		rfcReceptor: 'IND456123GHI',
-		subtotal: 2500,
-		impuestos: 400,
-		descuentos: 0,
-		retenciones: 0,
-		total: 2900,
-		moneda: 'USD',
-		conceptos: [
-			{
-				id: 'cpt_3a',
-				descripcion: 'Viga de Acero IPR 10"',
-				cantidad: 10,
-				unidad: 'Pieza',
-				valorUnitario: 250,
-				importe: 2500,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-		],
-	},
-	// Factura 4: Nota de Crédito (valores negativos)
-	{
-		id: 'inv_004',
-		folio: 'NC-2024-015',
-		proveedor: 'Servicios Creativos Digitales',
-		sociedad: '3000',
-		fecha: '2024-07-15',
-		rfcEmisor: 'SCD180115JKL',
-		rfcReceptor: 'CLI987654ABC',
-		subtotal: -2500,
-		impuestos: -400,
-		descuentos: 0,
-		retenciones: 0,
-		total: -2900,
-		moneda: 'MXN',
-		conceptos: [
-			{
-				id: 'cpt_4a',
-				descripcion: 'Ajuste por campaña publicitaria de Junio',
-				cantidad: -1,
-				unidad: 'Ajuste',
-				valorUnitario: 2500,
-				importe: -2500,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-		],
-	},
-	// Factura 5: Flete con retención de IVA
-	{
-		id: 'inv_005',
-		folio: 'L-500-2024',
-		proveedor: 'Logística Express del Sureste',
-		sociedad: '2000',
-		fecha: '2024-07-18',
-		rfcEmisor: 'LES150930MNO',
-		rfcReceptor: 'IND456123GHI',
-		subtotal: 8500,
-		impuestos: 1360,
-		descuentos: 0,
-		retenciones: 340, // 4% de retención de IVA para fletes
-		total: 9520,
-		moneda: 'MXN',
-		conceptos: [
-			{
-				id: 'cpt_5a',
-				descripcion: 'Servicio de Flete Terrestre (Ruta MTY-CDMX)',
-				cantidad: 1,
-				unidad: 'Viaje',
-				valorUnitario: 8500,
-				importe: 8500,
-				estatus: 'Pendiente',
-				prorrateos: [],
-			},
-		],
-	},
-])
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import {
+	Search,
+	Building,
+	Fingerprint,
+	Calendar as CalendarIcon,
+} from 'lucide-vue-next';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+// 1. Importar el store que creamos
+import { useInvoiceMonitorStore } from '@/stores/invoiceMonitorStore';
 
 // --- ESTADO DE LA VISTA ---
-const invoiceSearchTerm = ref('')
-const router = useRouter()
+const invoiceSearchTerm = ref('');
+const router = useRouter();
+
+// 2. Instanciar el store. La llamada a la API se ejecuta automáticamente.
+const invoiceMonitorStore = useInvoiceMonitorStore();
+
+// 3. Extraer los datos y estados del store de forma reactiva
+const { invoices, isLoading, isError, error } = storeToRefs(invoiceMonitorStore);
 
 // --- LÓGICA COMPUTADA ---
+// 4. Adaptar la propiedad computada para que filtre los datos del store
 const filteredInvoices = computed(() => {
-	if (!invoiceSearchTerm.value) return allInvoices.value
-	const lowerSearch = invoiceSearchTerm.value.toLowerCase()
-	return allInvoices.value.filter(
+	if (!invoices.value) return []; // Devolver array vacío si no hay datos
+	if (!invoiceSearchTerm.value) return invoices.value;
+
+	const lowerSearch = invoiceSearchTerm.value.toLowerCase();
+	return invoices.value.filter(
 		(inv) =>
 			inv.folio.toLowerCase().includes(lowerSearch) ||
-			inv.proveedor.toLowerCase().includes(lowerSearch),
-	)
-})
+			inv.razonsocial_emisor.toLowerCase().includes(lowerSearch),
+	);
+});
 
 // --- MÉTODOS ---
-const goToDetail = (invoiceId: string) => {
-	// Añade la barra al principio
+// 5. Asegurarse de que el método de navegación use el UUID
+const goToDetail = (invoiceUuid: string) => {
 	router.push({
 		name: 'invoice-monitor-detail',
-		params: { uuid: invoiceId },
-	})
-}
+		params: { uuid: invoiceUuid },
+	});
+};
 
+// Funciones de formato (se mantienen igual)
 const formatCurrency = (amount: number, currency: string) =>
-	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(amount)
-const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
+	new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(
+		amount,
+	);
+const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' });
 </script>
 
 <template>
@@ -234,10 +61,19 @@ const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 			<h1 class="text-2xl font-bold md:text-3xl">Monitor de Facturas</h1>
 		</div>
 
-		<div class="space-y-4">
+		<!-- 6. Manejar los estados de carga y error -->
+		<div v-if="isLoading" class="text-center py-10">
+			<p>Cargando facturas...</p>
+		</div>
+		<div v-else-if="isError" class="text-center py-10 text-red-500">
+			<p>Error al cargar las facturas: {{ error?.message }}</p>
+		</div>
+
+		<!-- 7. Mostrar el contenido solo cuando la carga ha finalizado y no hay error -->
+		<div v-else class="space-y-4">
 			<div class="relative">
 				<Search
-					class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+					class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
 					v-model="invoiceSearchTerm"
@@ -245,36 +81,45 @@ const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 					class="pl-10"
 				/>
 			</div>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[75vh] overflow-y-auto p-1">
+			<div
+				class="grid grid-cols-1 gap-4 p-1 max-h-[75vh] overflow-y-auto md:grid-cols-2"
+			>
+				<!-- 8. Actualizar el v-for y los bindings de datos -->
 				<Card
 					v-for="invoice in filteredInvoices"
-					:key="invoice.id"
-					class="cursor-pointer transition-all hover:shadow-lg hover:border-primary"
-					@click="goToDetail(invoice.id)"
+					:key="invoice.id_factura"
+					class="cursor-pointer transition-all hover:border-primary hover:shadow-lg"
+					@click="goToDetail(invoice.uuid)"
 				>
-					<div class="flex justify-between items-stretch">
-						<div class="p-4 flex-1">
-							<h3 class="font-bold text-primary">{{ invoice.folio }}</h3>
-							<p class="text-sm text-muted-foreground">{{ invoice.proveedor }}</p>
+					<div class="flex items-stretch justify-between">
+						<div class="flex-1 p-4">
+							<h3 class="font-bold text-primary">{{ invoice.uuid }}</h3>
+							<p class="text-sm text-muted-foreground">
+								{{ invoice.razonsocial_emisor }}
+							</p>
 							<Separator class="my-2" />
-							<div class="text-xs space-y-1 text-muted-foreground">
+							<div class="space-y-1 text-xs text-muted-foreground">
 								<p class="flex items-center gap-2">
-									<Building class="h-3 w-3" /> Sociedad: {{ invoice.sociedad }}
+									<Building class="h-3 w-3" /> Sociedad:
+									{{ invoice.sociedad }}
 								</p>
 								<p class="flex items-center gap-2">
-									<Fingerprint class="h-3 w-3" /> RFC: {{ invoice.rfcEmisor }}
+									<Fingerprint class="h-3 w-3" /> RFC:
+									{{ invoice.rfc_emisor }}
 								</p>
 								<p class="flex items-center gap-2">
 									<CalendarIcon class="h-3 w-3" /> Fecha:
-									{{ df.format(new Date(invoice.fecha)) }}
+									{{ df.format(new Date(invoice.fecha_expedicion)) }}
 								</p>
 							</div>
 						</div>
 						<div
-							class="flex flex-col justify-center items-center p-4 w-32 rounded-r-lg"
+							class="flex w-32 flex-col items-center justify-center rounded-r-lg p-4"
 						>
-							<span class="text-xs text-muted-foreground">{{ invoice.moneda }}</span>
-							<span class="font-bold text-lg">{{
+							<span class="text-xs text-muted-foreground">{{
+								invoice.moneda
+							}}</span>
+							<span class="text-lg font-bold">{{
 								formatCurrency(invoice.total, invoice.moneda).replace(
 									/[A-Z$]+/g,
 									'',
