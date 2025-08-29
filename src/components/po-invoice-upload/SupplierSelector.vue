@@ -12,7 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { ChevronsUpDown, Check, OctagonXIcon } from 'lucide-vue-next'
+import { ChevronsUpDown, Check, OctagonXIcon, Users } from 'lucide-vue-next'
 import { usePOInvoiceStore } from '@/stores/poInvoiceStore'
 import type { Provider } from '@/schemas/providerSchema'
 import Label from '../ui/label/Label.vue'
@@ -41,7 +41,10 @@ onMounted(() => {
     <!-- Vista de Selección de Proveedor -->
     <template v-if="!invoiceStore.selectedSupplierId && !invoiceStore.isUserProvider">
       <CardHeader>
-        <CardTitle>Proveedores</CardTitle>
+        <div class="flex items-center">
+          <Users class="mr-2 h-5 w-5" />
+          <CardTitle>Proveedores</CardTitle>
+        </div>
         <CardDescription>Busca y selecciona un proveedor</CardDescription>
       </CardHeader>
       <CardContent>

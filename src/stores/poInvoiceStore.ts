@@ -24,7 +24,7 @@ import { formatCurrency } from '@/lib/utils';
 // Interfaz para la información de desviación
 
 // Interfaz para los datos extraídos del XML
-interface ExtractedXmlData {
+export interface ExtractedXmlData {
 	uuid: string;
 	fecha_timbrado: string;
 	sello_sat: string;

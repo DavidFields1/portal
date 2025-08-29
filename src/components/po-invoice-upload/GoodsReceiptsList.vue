@@ -23,7 +23,7 @@ const invoiceStore = usePOInvoiceStore()
     <CardContent>
       <div v-if="!invoiceStore.selectedSupplierId" class="text-center py-8 text-muted-foreground">
         <UserIcon class="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p class="text-lg font-medium">Selecciona una Proveedor</p>
+        <p class="text-lg font-medium">Selecciona un Proveedor</p>
         <p class="text-sm">para ver sus Ordenes de Compra</p>
       </div>
 

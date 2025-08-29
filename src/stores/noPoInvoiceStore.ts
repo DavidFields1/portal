@@ -1,9 +1,12 @@
 // src/stores/noPoInvoiceStore.ts
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
-import { UploadCloud, FileText, ClipboardList } from 'lucide-vue-next';
+import { UploadCloud, FileText, ClipboardList, Users } from 'lucide-vue-next';
+import { useAuthStore } from './authStore';
+import { useProvidersQuery } from '@/composables/useProviders';
+import { ProviderSchema, type Provider } from '@/schemas/providerSchema';
 import { readFileAsText } from '@/helpers/ReadFilesAsText';
 import { convertXMLtoJSON } from '@/helpers/ConvertXmlToJson';
 import { mapXmlData } from '@/helpers/MapXmlData';
@@ -11,104 +14,74 @@ import { InvoiceDataSchema, type InvoiceData, type Step } from '@/schemas/invoic
 import axiosInstance from '@/config/axiosInstance';
 import { ValidateRfcResponseSchema, type ValidateRfcResponse } from '@/schemas/validateRfc';
 import { queryClient } from '@/main';
-
-// Copiamos la interfaz del store de PO, ya que es muy útil
-interface ExtractedXmlData {
-	uuid: string;
-	fecha_timbrado: string;
-	sello_sat: string;
-	no_certificado_sat: string;
-	moneda: string;
-	total: number;
-	subtotal: number;
-	fecha_expedicion: string;
-	metodo_pago: string;
-	forma_pago: string;
-	sello: string;
-	no_certificado: string;
-	certificado: string;
-	tipo_comprobante: string;
-	serie: string;
-	folio: string;
-	lugar_expedicion: string;
-	razonsocial_emisor: string;
-	rfc_emisor: string;
-	regimen_fiscal_emisor: string;
-	razonsocial_receptor: string;
-	rfc_receptor: string;
-	domicilio_fiscal_receptor: string;
-	regimen_fiscal_receptor: string;
-	uso_cfdi: string;
-	total_impuestos_trasladados: number;
-	total_impuestos_retenidos: number;
-	conceptos: Array<{
-		id_concepto: number;
-		uuid_factura: string;
-		clave_prod_serv: string;
-		cantidad: number;
-		clave_unidad: string;
-		unidad: string;
-		descripcion: string;
-		valor_unitario: number;
-		importe: number;
-		estatus: string;
-		fecha_creacion: string;
-		fecha_modificacion: string;
-	}>;
-	retenciones?: Array<{
-		Base: string;
-		Impuesto: string;
-		TipoFactor: string;
-		TasaOCuota: string;
-		Importe: string;
-	}>;
-}
+import type { ExtractedXmlData } from './poInvoiceStore';
 
 export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
+	const authStore = useAuthStore();
+
 	// --- ESTADO ---
 	const allSteps = ref<Step[]>([
+		{ id: 'select_supplier', name: 'Seleccionar Proveedor', icon: Users },
 		{ id: 'upload_files', name: 'Subir Archivos', icon: UploadCloud },
 		{ id: 'invoice_data', name: 'Datos de Factura', icon: ClipboardList },
 		{ id: 'confirm', name: 'Confirmar', icon: FileText },
 	]);
-
 	const currentStepIndex = ref(0);
+	const selectedSupplierId = ref<string | null>(null);
+	const currentSupplierName = ref<string | null>(null);
 	const selectedPdfFile = ref<File | null>(null);
 	const selectedXmlFile = ref<File | null>(null);
 	const isSubmitting = ref(false);
-
 	const invoiceData = ref<InvoiceData>({
 		folio: '',
 		moneda: 'MXN',
 		importe: 0,
 		sociedad: '',
 	});
-
 	const invoiceExtractedData = ref<ExtractedXmlData | null>(null);
 	const xmlValidationStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
 	const xmlValidationError = ref<string | null>(null);
+	const selectedProvider = ref<Provider | null>(null);
 
 	// --- GETTERS (COMPUTED) ---
+	const isUserProvider = computed(() => {
+		return authStore.user?.proveedor !== null && authStore.user?.proveedor !== undefined;
+	});
+	const userProvider = computed(() => {
+		return authStore.user?.proveedor;
+	});
 
-	// Lógica de pasos dinámicos
 	const steps = computed<Step[]>(() => {
-		const baseSteps = [allSteps.value[0]]; // upload_files
-
-		// Solo agregar el paso de datos de factura si la moneda NO es MXN
+		const baseSteps = [allSteps.value[0], allSteps.value[1]];
 		if (invoiceData.value.moneda !== 'MXN') {
-			baseSteps.push(allSteps.value[1]); // invoice_data
+			baseSteps.push(allSteps.value[2]);
 		}
-
-		baseSteps.push(allSteps.value[2]); // confirm
+		baseSteps.push(allSteps.value[3]);
 		return baseSteps;
 	});
 
-	const getCurrentStepId = computed<string>(
-		() => steps.value[currentStepIndex.value]?.id || 'upload_files',
+	// --- WATCHER CORRECTO PARA PREVENIR ERRORES DE REACTIVIDAD ---
+	watch(
+		() => invoiceData.value.moneda,
+		(newMoneda, oldMoneda) => {
+			if (oldMoneda !== 'MXN' && newMoneda === 'MXN') {
+				if (currentStepIndex.value >= steps.value.length) {
+					currentStepIndex.value = steps.value.length - 1;
+				}
+			}
+		},
 	);
 
-	const needsInvoiceDataStep = computed<boolean>(() => invoiceData.value.moneda !== 'MXN');
+	const getCurrentStepId = computed<string>(
+		() => steps.value[currentStepIndex.value]?.id || 'select_supplier',
+	);
 
+	const providersQuery = useProvidersQuery();
+	const allProviders = computed<Provider[]>(() => {
+		return providersQuery.data.value?.object.content ?? [];
+	});
+	const isSelectionLocked = computed<boolean>(() => currentStepIndex.value > 0);
+	const needsInvoiceDataStep = computed<boolean>(() => invoiceData.value.moneda !== 'MXN');
 	const canProceed = computed<boolean>(() => {
 		const currentId = getCurrentStepId.value;
 		if (currentId === 'upload_files') {
@@ -121,13 +94,15 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 		if (currentId === 'invoice_data') {
 			return InvoiceDataSchema.safeParse(invoiceData.value).success;
 		}
-		return true; // Para el paso de confirmación
+		return true;
 	});
 
 	// --- ACCIONES ---
-
 	const resetProcess = () => {
 		currentStepIndex.value = 0;
+		selectedSupplierId.value = null;
+		currentSupplierName.value = null;
+		selectedProvider.value = null;
 		selectedPdfFile.value = null;
 		selectedXmlFile.value = null;
 		isSubmitting.value = false;
@@ -136,7 +111,70 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 		xmlValidationStatus.value = 'idle';
 		xmlValidationError.value = null;
 	};
-
+	const selectSupplier = (provider: Provider) => {
+		try {
+			const validatedSupplier = ProviderSchema.parse(provider);
+			selectedSupplierId.value = validatedSupplier.id_proveedor_sap;
+			currentSupplierName.value = validatedSupplier.nombre_razon_social;
+			selectedProvider.value = validatedSupplier;
+			toast.success(`Proveedor seleccionado: ${validatedSupplier.nombre_razon_social}`);
+			// 1. REQUERIMIENTO: AVANZAR AUTOMÁTICAMENTE
+			currentStepIndex.value = 1;
+		} catch (error) {
+			console.error('Invalid supplier data:', error);
+			toast.error('Error al seleccionar proveedor');
+		}
+	};
+	const resetSupplierSelection = () => {
+		selectedSupplierId.value = null;
+		currentSupplierName.value = null;
+		currentStepIndex.value = 0;
+		selectedProvider.value = null;
+		// Limpiar también los archivos, ya que dependen del contexto del proveedor
+		selectedPdfFile.value = null;
+		selectedXmlFile.value = null;
+		xmlValidationStatus.value = 'idle';
+		xmlValidationError.value = null;
+		toast.info('Selección de proveedor reiniciada.');
+	};
+	const autoConfigureProvider = () => {
+		if (isUserProvider.value && userProvider.value) {
+			const provider: Provider = {
+				usuario: null,
+				id_proveedor: userProvider.value.id_proveedor,
+				id_usuario: userProvider.value.id_usuario,
+				id_proveedor_sap: userProvider.value.id_proveedor_sap,
+				id_bloqueo: userProvider.value.id_bloqueo,
+				nombre_razon_social: userProvider.value.nombre_razon_social,
+				rfc: userProvider.value.rfc,
+				pais_clave: userProvider.value.pais_clave,
+				file_path: userProvider.value.file_path,
+				fecha_creacion: userProvider.value.fecha_creacion,
+				fecha_modificacion: userProvider.value.fecha_modificacion,
+			};
+			selectedProvider.value = provider;
+			selectedSupplierId.value = provider.id_proveedor_sap;
+			currentSupplierName.value = provider.nombre_razon_social;
+		}
+	};
+	const nextStep = () => {
+		if (currentStepIndex.value === 0 && !selectedSupplierId.value) {
+			toast.error('Debes seleccionar un proveedor para continuar.');
+			return;
+		}
+		if (!canProceed.value && currentStepIndex.value > 0) {
+			toast.error('Completa los requisitos del paso actual para continuar.');
+			return;
+		}
+		if (currentStepIndex.value < steps.value.length - 1) {
+			currentStepIndex.value++;
+		}
+	};
+	const prevStep = () => {
+		if (currentStepIndex.value > 0) {
+			currentStepIndex.value--;
+		}
+	};
 	const handleFileUpload = async (files: { pdf?: File; xml?: File }) => {
 		if (files.pdf) {
 			selectedPdfFile.value = files.pdf;
@@ -146,7 +184,6 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			await validateAndProcessXml(files.xml);
 		}
 	};
-
 	const removeFile = (type: 'pdf' | 'xml') => {
 		if (type === 'pdf') {
 			selectedPdfFile.value = null;
@@ -158,44 +195,19 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			toast.info('Archivo XML removido.');
 		}
 	};
-
 	const updateInvoiceData = (data: Partial<InvoiceData>) => {
 		invoiceData.value = { ...invoiceData.value, ...data };
 	};
-
-	const nextStep = () => {
-		if (!canProceed.value) {
-			toast.error('Completa los requisitos del paso actual para continuar.');
-			return;
-		}
-		if (currentStepIndex.value < steps.value.length - 1) {
-			currentStepIndex.value++;
-		}
-	};
-
-	const prevStep = () => {
-		if (currentStepIndex.value > 0) {
-			currentStepIndex.value--;
-		}
-	};
-
 	const validateAndProcessXml = async (xmlFile: File) => {
 		xmlValidationStatus.value = 'loading';
 		xmlValidationError.value = null;
-
 		try {
 			const xmlString = await readFileAsText(xmlFile);
 			const xmlObject = convertXMLtoJSON(xmlString);
 			const extractedData = mapXmlData(xmlObject);
-
-			// --- CADENA DE VALIDACIÓN (versión sin OC) ---
-
-			// 1. Tipo de Comprobante
 			if (extractedData.tipo_comprobante !== 'I') {
 				throw new Error('El tipo de comprobante debe ser de Ingreso (I).');
 			}
-
-			// 2. Fecha de Timbrado (mismo mes y año)
 			const dateStamped = new Date(extractedData.fecha_timbrado);
 			const currentDate = new Date();
 			if (
@@ -204,8 +216,6 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			) {
 				throw new Error('La fecha de la factura no corresponde al mes y año actual.');
 			}
-
-			// 3. RFC del Receptor
 			const rfcQueryOptions = {
 				queryKey: ['validate-rfc', extractedData.rfc_receptor],
 				queryFn: async (): Promise<ValidateRfcResponse> => {
@@ -223,14 +233,11 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 						'El RFC del receptor no es válido.',
 				);
 			}
-
-			// --- VALIDACIONES PASARON ---
 			updateInvoiceData({
 				folio: extractedData.folio,
 				moneda: extractedData.moneda,
 				importe: extractedData.total,
 			});
-
 			invoiceExtractedData.value = extractedData;
 			selectedXmlFile.value = xmlFile;
 			xmlValidationStatus.value = 'success';
@@ -247,8 +254,6 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 		if (!invoiceExtractedData.value || !selectedPdfFile.value || !selectedXmlFile.value) {
 			throw new Error('Faltan datos o archivos para crear la factura.');
 		}
-
-		// 1. Construir el objeto de factura a partir de los datos del store
 		const factura = {
 			id_factura: 0,
 			uuid: invoiceExtractedData.value.uuid,
@@ -265,7 +270,7 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			metodo_pago: invoiceExtractedData.value.metodo_pago,
 			forma_pago: invoiceExtractedData.value.forma_pago,
 			estatus: 'NUEVA',
-			file_path: '', // Asignado por el backend
+			file_path: '',
 			sello: invoiceExtractedData.value.sello,
 			no_certificado: invoiceExtractedData.value.no_certificado,
 			certificado: invoiceExtractedData.value.certificado,
@@ -280,70 +285,60 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			tipo_factura: invoiceExtractedData.value.tipo_comprobante,
 			serie: invoiceExtractedData.value.serie,
 			folio: invoiceData.value.folio,
-			documento_contable: '', // No aplica en este flujo
-			ejercicio_fiscal: '', // No aplica en este flujo
+			documento_contable: '',
+			ejercicio_fiscal: '',
 			sociedad: invoiceData.value.sociedad,
 			conceptos: invoiceExtractedData.value.conceptos,
-			// El proveedor se identifica por el RFC emisor, no se envía un ID SAP
-			id_proveedor_sap: null,
+			id_proveedor_sap: selectedSupplierId.value,
 		};
-
-		// 2. Crear el objeto FormData
 		const formData = new FormData();
-
-		// Adjuntar el JSON de la factura como un Blob
 		formData.append(
 			'factura',
 			new Blob([JSON.stringify(factura)], { type: 'application/json' }),
 		);
-
-		// Adjuntar los archivos PDF y XML
 		formData.append('files', selectedPdfFile.value, selectedPdfFile.value.name);
 		formData.append('files', selectedXmlFile.value, selectedXmlFile.value.name);
-
-		// 3. Definir y ejecutar la query con TanStack Query
 		const createFacturaQueryOptions = {
 			queryKey: ['create-soc-factura', factura.uuid, factura.folio],
 			queryFn: async () => {
 				const { data } = await axiosInstance.post('/factura/soc', formData, {
-					headers: {
-						// Axios establece esto automáticamente para FormData, pero es bueno saberlo
-						'Content-Type': 'multipart/form-data',
-					},
+					headers: { 'Content-Type': 'multipart/form-data' },
 				});
 				return data;
 			},
 		};
-
-		// Usamos fetchQuery para una mutación "one-off"
 		return await queryClient.fetchQuery(createFacturaQueryOptions);
 	};
-
 	const submitInvoice = async () => {
 		if (isSubmitting.value) return;
 		isSubmitting.value = true;
-
 		try {
+			if (needsInvoiceDataStep.value) {
+				const validation = InvoiceDataSchema.safeParse(invoiceData.value);
+				if (!validation.success) {
+					throw new Error('Los datos de la factura son inválidos.');
+				}
+			}
 			await createFactura();
-
 			toast.success('Factura cargada exitosamente', {
 				description: 'La factura sin OC fue enviada correctamente.',
 			});
 			resetProcess();
 		} catch (error) {
-			console.error('Error submitting invoice:', error);
-			toast.error('Error al cargar la factura', {
-				description: 'Por favor, inténtalo de nuevo más tarde.',
-			});
+			console.error('Error al enviar la factura:', error);
+			const errorMessage =
+				error instanceof Error ? error.message : 'Ocurrió un error desconocido.';
+			toast.error('Error al cargar la factura', { description: errorMessage });
 		} finally {
 			isSubmitting.value = false;
 		}
 	};
 
 	return {
-		// Estado
 		steps,
 		currentStepIndex,
+		selectedSupplierId,
+		currentSupplierName,
 		selectedPdfFile,
 		selectedXmlFile,
 		isSubmitting,
@@ -351,19 +346,25 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 		invoiceExtractedData,
 		xmlValidationStatus,
 		xmlValidationError,
-
-		// Getters
+		isUserProvider,
+		userProvider,
+		allProviders,
+		providersQuery,
+		isSelectionLocked,
 		getCurrentStepId,
 		needsInvoiceDataStep,
 		canProceed,
-
-		// Acciones
 		resetProcess,
+		selectSupplier,
+		resetSupplierSelection,
+		autoConfigureProvider,
+		nextStep,
+		prevStep,
 		handleFileUpload,
 		removeFile,
 		updateInvoiceData,
-		nextStep,
-		prevStep,
 		submitInvoice,
+		createFactura,
+		selectedProvider,
 	};
 });
