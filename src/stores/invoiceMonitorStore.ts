@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import axiosInstance from '@/config/axiosInstance';
 import { InvoiceMonitorResponseSchema, type InvoiceMonitor } from '@/schemas/invoiceSchemas';
+import { ConceptResponseSchema, type Concept } from '@/schemas/conceptSchemas';
 
 // Interfaz para los filtros de búsqueda
 interface InvoiceFilters {
@@ -14,9 +15,6 @@ interface InvoiceFilters {
 }
 
 export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
-	// --- ESTADO ---
-
-	// Estado para los filtros de búsqueda, reactivo para que TanStack Query reaccione a los cambios
 	const filters = ref<InvoiceFilters>({
 		estatus: '',
 		fechaOrigen: '',
@@ -24,21 +22,11 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		tipoFechaBusqueda: '',
 	});
 
-	// Estado para la paginación (si es necesaria en el futuro)
 	const searchAfter = ref(0);
 
-	// --- QUERIES (con TanStack Query) ---
-
-	/**
-	 * Query para obtener las facturas del monitor.
-	 * Se ejecuta automáticamente cuando el store es instanciado en un componente.
-	 * Vuelve a ejecutarse si los filtros cambian.
-	 */
 	const invoicesQuery = useQuery({
-		// La clave de la query incluye los filtros para que se invalide y se vuelva a ejecutar si cambian
 		queryKey: ['invoices', filters],
 		queryFn: async (): Promise<InvoiceMonitor[]> => {
-			// Construir los parámetros de la URL de forma segura
 			const params = new URLSearchParams({
 				tipoFactura: 'SOC',
 				searchAfter: searchAfter.value.toString(),
@@ -48,18 +36,34 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 				tipoFechaBusqueda: filters.value.tipoFechaBusqueda,
 			});
 
-			// Realizar la petición GET
 			const { data } = await axiosInstance.get('/factura', { params });
 
-			// Validar la respuesta con el esquema de Zod. Si falla, lanzará un error.
 			const parsedData = InvoiceMonitorResponseSchema.parse(data);
 
-			// Devolver el array de facturas
 			return parsedData.object;
 		},
-		// Opciones adicionales de TanStack Query
-		refetchOnWindowFocus: false, // Evita refetches innecesarios al cambiar de pestaña
-		staleTime: 1000 * 60 * 5, // Considera los datos "frescos" por 5 minutos
+		refetchOnWindowFocus: false,
+		staleTime: 1000 * 60 * 5,
+	});
+
+	const selectedInvoiceUuid = ref<string | null>(null);
+	const conceptsQuery = useQuery({
+		queryKey: ['concepts', selectedInvoiceUuid],
+		queryFn: async (): Promise<Concept[]> => {
+			const uuid = selectedInvoiceUuid.value;
+			if (!uuid) {
+				throw new Error('No se ha proporcionado un UUID de factura.');
+			}
+			const params = new URLSearchParams({ uuid_factura: uuid });
+			const { data } = await axiosInstance.get('/factura/concepto', {
+				params,
+			});
+			const parsedData = ConceptResponseSchema.parse(data);
+			return parsedData.object;
+		},
+		enabled: computed(() => !!selectedInvoiceUuid.value),
+		refetchOnWindowFocus: false,
+		staleTime: 1000 * 60 * 10,
 	});
 
 	// --- GETTERS (usando computed) ---
@@ -67,13 +71,49 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 	// Un getter computado para acceder fácilmente a la lista de facturas.
 	// Devuelve un array vacío si los datos aún no están disponibles.
 	const invoices = computed(() => invoicesQuery.data.value ?? []);
-
-	// Exponer el estado de carga para mostrar un mensaje de "loading" en la UI.
 	const isLoading = computed(() => invoicesQuery.isLoading.value);
-
-	// Exponer el estado de error para manejar fallos en la UI.
 	const isError = computed(() => invoicesQuery.isError.value);
 	const error = computed(() => invoicesQuery.error.value);
+
+	const isConceptsLoading = computed(() => conceptsQuery.isLoading.value);
+	const isConceptsError = computed(() => conceptsQuery.isError.value);
+	const conceptsError = computed(() => conceptsQuery.error.value);
+
+	// Getter que encuentra la factura base en la lista ya cargada
+	const selectedInvoiceBase = computed(() => {
+		if (!selectedInvoiceUuid.value || invoices.value.length === 0) {
+			return null;
+		}
+		return invoices.value.find((inv) => inv.uuid === selectedInvoiceUuid.value) ?? null;
+	});
+
+	// --- GETTER PRINCIPAL: COMBINA LA FACTURA BASE CON SUS CONCEPTOS ---
+	const selectedInvoice = computed(() => {
+		const base = selectedInvoiceBase.value;
+		const conceptsData = conceptsQuery.data.value;
+
+		if (!base) return null;
+
+		// Mapeamos los conceptos de la API a la estructura que espera el componente
+		// y los añadimos a la factura base.
+		const mappedConcepts = (conceptsData ?? []).map((c) => ({
+			id: c.id_concepto, // El componente espera un ID de string
+			descripcion: c.descripcion,
+			cantidad: c.cantidad,
+			unidad: c.unidad,
+			valorUnitario: c.valor_unitario,
+			importe: c.importe,
+			// Aseguramos que el estatus coincida con los valores esperados
+			estatus: c.estatus === 'Completado' ? 'Completado' : ('Pendiente' as const),
+			// Inicializamos los prorrateos como un array vacío
+			prorrateos: [],
+		}));
+
+		return {
+			...base,
+			conceptos: mappedConcepts,
+		};
+	});
 
 	// --- ACCIONES ---
 
@@ -105,6 +145,17 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		};
 	};
 
+	const selectInvoiceForDetail = (uuid: string) => {
+		selectedInvoiceUuid.value = uuid;
+	};
+
+	/**
+	 * Limpia el UUID de la factura seleccionada, desactivando la query.
+	 */
+	const clearSelectedInvoice = () => {
+		selectedInvoiceUuid.value = null;
+	};
+
 	// Exponer el estado, getters y acciones para que puedan ser usados en los componentes
 	return {
 		// Estado
@@ -112,16 +163,24 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 
 		// Queries (para acceso a más detalles como isFetching, etc.)
 		invoicesQuery,
+		conceptsQuery,
+		selectedInvoiceUuid,
+		selectedInvoice,
 
 		// Getters
 		invoices,
 		isLoading,
 		isError,
 		error,
+		isConceptsLoading,
+		isConceptsError,
+		conceptsError,
 
 		// Acciones
 		setFilters,
 		refetchInvoices,
 		resetFilters,
+		selectInvoiceForDetail,
+		clearSelectedInvoice,
 	};
 });

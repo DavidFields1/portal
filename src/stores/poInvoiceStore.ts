@@ -444,6 +444,24 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 				throw new Error('El tipo de comprobante debe ser de Ingreso (I).');
 			}
 
+			// Validación #7: Impuestos 16% y Total correcto
+			const expectedTax = +(extractedData.subtotal * 0.16).toFixed(2);
+			const actualTax = +extractedData.total_impuestos_trasladados.toFixed(2);
+			const expectedTotal = +(extractedData.subtotal + expectedTax).toFixed(2);
+			const actualTotal = +extractedData.total.toFixed(2);
+
+			if (actualTax !== expectedTax) {
+				throw new Error(
+					`El impuesto calculado (${actualTax}) no corresponde al 16% del subtotal (${expectedTax}).`,
+				);
+			}
+
+			if (actualTotal !== expectedTotal) {
+				throw new Error(
+					`El total del XML (${actualTotal}) no corresponde a la suma del subtotal (${extractedData.subtotal}) más impuestos (${expectedTax}).`,
+				);
+			}
+
 			// Validación #2: Moneda
 			if (extractedData.moneda !== selectedPO.value?.Moneda) {
 				throw new Error('La moneda del XML no coincide con la de la Orden de Compra.');
@@ -451,10 +469,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 			// Validación #3: Importes (Subtotal vs Entradas de Mercancía)
 			const difference = Math.abs(extractedData.subtotal - totalSelectedAmount.value);
-			console.log('subtotal', extractedData.subtotal);
-			console.log('total entradas', totalSelectedAmount.value);
-			console.log('DIFFERENCE', difference);
-
 			if (difference > 0) {
 				// Consultar servicio de desviaciones por moneda
 				try {
@@ -471,21 +485,21 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 					});
 
 					// Si la diferencia excede la tolerancia, lanzar error
-					if (difference > deviationResponse[0].desviacion_permitida) {
+					if (difference > deviationResponse.desviacion_permitida) {
 						throw new Error(
-							`La diferencia entre el subtotal del XML (${extractedData.subtotal}) y las entradas seleccionadas (${totalSelectedAmount.value}) excede la tolerancia permitida de ${deviationResponse[0].desviacion_permitida}.`,
+							`La diferencia entre el subtotal del XML (${extractedData.subtotal}) y las entradas seleccionadas (${totalSelectedAmount.value}) excede la tolerancia permitida de ${deviationResponse.desviacion_permitida}.`,
 						);
 					}
 
 					// Si está dentro de la tolerancia, guardar información de desviación
 					deviationInfo.value = {
-						id_desviacion_moneda: deviationResponse[0].id_desviacion_moneda,
-						descripcion: deviationResponse[0].descripcion,
+						id_desviacion_moneda: deviationResponse.id_desviacion_moneda,
+						descripcion: deviationResponse.descripcion,
 						moneda: extractedData.moneda,
-						desviacion_permitida: deviationResponse[0].desviacion_permitida,
-						estatus: deviationResponse[0].estatus,
-						fecha_creacion: deviationResponse[0].fecha_creacion,
-						fecha_modificacion: deviationResponse[0].fecha_modificacion,
+						desviacion_permitida: deviationResponse.desviacion_permitida,
+						estatus: deviationResponse.estatus,
+						fecha_creacion: deviationResponse.fecha_creacion,
+						fecha_modificacion: deviationResponse.fecha_modificacion,
 					};
 
 					toast.warning(
@@ -546,7 +560,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			}
 
 			// Validación #6: RFC del Emisor (basado en rol)
-			// TODO: Implementar la lógica para obtener el rol del usuario
 			const userRole = 'EMPL'; // Simular rol de empleado
 			if (userRole === 'EMPL') {
 				if (extractedData.rfc_emisor !== selectedSupplierRfc.value) {
@@ -584,44 +597,43 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 
 	const createFactura = async () => {
 		try {
-			// Construir el objeto de factura (ver comentarios para campos a mapear)
 			const factura = {
 				id_factura: 0,
-				uuid: invoiceExtractedData.value?.uuid || '', // Mapear del XML
+				uuid: invoiceExtractedData.value?.uuid || '',
 				moneda: invoiceData.value.moneda,
 				total: invoiceData.value.importe,
-				fecha_expedicion: invoiceExtractedData.value?.fecha_expedicion || '', // Mapear del XML
-				fecha_timbrado: invoiceExtractedData.value?.fecha_timbrado || '', // Mapear del XML
+				fecha_expedicion: invoiceExtractedData.value?.fecha_expedicion || '',
+				fecha_timbrado: invoiceExtractedData.value?.fecha_timbrado || '',
 				fecha_creacion: new Date().toISOString(),
-				razonsocial_emisor: invoiceExtractedData.value?.razonsocial_emisor || '', // Mapear del XML
+				razonsocial_emisor: invoiceExtractedData.value?.razonsocial_emisor || '',
 				rfc_emisor: invoiceExtractedData.value?.rfc_emisor || selectedSupplierRfc.value,
-				razonsocial_receptor: invoiceExtractedData.value?.razonsocial_receptor || '', // Mapear del XML
-				rfc_receptor: invoiceExtractedData.value?.rfc_receptor || '', // Mapear del XML
-				domicilio_fiscal: invoiceExtractedData.value?.domicilio_fiscal_receptor || '', // Mapear del XML
-				metodo_pago: invoiceExtractedData.value?.metodo_pago || '', // Mapear del XML
-				forma_pago: invoiceExtractedData.value?.forma_pago || '', // Mapear del XML
+				razonsocial_receptor: invoiceExtractedData.value?.razonsocial_receptor || '',
+				rfc_receptor: invoiceExtractedData.value?.rfc_receptor || '',
+				domicilio_fiscal: invoiceExtractedData.value?.domicilio_fiscal_receptor || '',
+				metodo_pago: invoiceExtractedData.value?.metodo_pago || '',
+				forma_pago: invoiceExtractedData.value?.forma_pago || '',
 				estatus: 'NUEVA',
-				file_path: '', // El backend lo asigna
-				sello: invoiceExtractedData.value?.sello || '', // Mapear del XML
-				no_certificado: invoiceExtractedData.value?.no_certificado || '', // Mapear del XML
-				certificado: invoiceExtractedData.value?.certificado || '', // Mapear del XML
+				file_path: '',
+				sello: invoiceExtractedData.value?.sello || '',
+				no_certificado: invoiceExtractedData.value?.no_certificado || '',
+				certificado: invoiceExtractedData.value?.certificado || '',
 				subtotal: invoiceExtractedData.value?.subtotal || 0,
-				tipo_comprobante: invoiceExtractedData.value?.tipo_comprobante || '', // Mapear del XML
-				regimen_fiscal_receptor: invoiceExtractedData.value?.regimen_fiscal_receptor || '', // Mapear del XML
-				uso_cfdi: invoiceExtractedData.value?.uso_cfdi || '', // Mapear del XML
+				tipo_comprobante: invoiceExtractedData.value?.tipo_comprobante || '',
+				regimen_fiscal_receptor: invoiceExtractedData.value?.regimen_fiscal_receptor || '',
+				uso_cfdi: invoiceExtractedData.value?.uso_cfdi || '',
 				total_impuestos_trasladados:
-					invoiceExtractedData.value?.total_impuestos_trasladados || 0, // Mapear del XML
+					invoiceExtractedData.value?.total_impuestos_trasladados || 0,
 				total_impuestos_retenidos:
-					invoiceExtractedData.value?.total_impuestos_retenidos || 0, // Mapear del XML
-				sello_sat: invoiceExtractedData.value?.sello_sat || '', // Mapear del XML
-				no_certificado_sat: invoiceExtractedData.value?.no_certificado_sat || '', // Mapear del XML
-				tipo_factura: invoiceExtractedData.value?.tipo_comprobante || '', // Mapear del XML
-				serie: invoiceExtractedData.value?.serie || '', // Mapear del XML
+					invoiceExtractedData.value?.total_impuestos_retenidos || 0,
+				sello_sat: invoiceExtractedData.value?.sello_sat || '',
+				no_certificado_sat: invoiceExtractedData.value?.no_certificado_sat || '',
+				tipo_factura: invoiceExtractedData.value?.tipo_comprobante || '',
+				serie: invoiceExtractedData.value?.serie || '',
 				folio: invoiceData.value.folio,
-				documento_contable: '', // ¿De dónde se obtiene?
-				ejercicio_fiscal: '', // ¿De dónde se obtiene?
+				documento_contable: '',
+				ejercicio_fiscal: '',
 				sociedad: invoiceData.value.sociedad,
-				conceptos: invoiceExtractedData.value?.conceptos || [], // Mapear del XML
+				conceptos: invoiceExtractedData.value?.conceptos || [],
 				id_proveedor_sap: selectedSupplierId.value,
 			};
 

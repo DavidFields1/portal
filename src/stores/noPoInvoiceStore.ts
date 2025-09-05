@@ -210,6 +210,7 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 			}
 			const dateStamped = new Date(extractedData.fecha_timbrado);
 			const currentDate = new Date();
+
 			if (
 				dateStamped.getMonth() !== currentDate.getMonth() ||
 				dateStamped.getFullYear() !== currentDate.getFullYear()
@@ -298,6 +299,7 @@ export const useNoPOInvoiceStore = defineStore('no-po-invoice', () => {
 		);
 		formData.append('files', selectedPdfFile.value, selectedPdfFile.value.name);
 		formData.append('files', selectedXmlFile.value, selectedXmlFile.value.name);
+		console.log('factura', factura);
 		const createFacturaQueryOptions = {
 			queryKey: ['create-soc-factura', factura.uuid, factura.folio],
 			queryFn: async () => {

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 // 1. Importar el store que creamos
 import { useInvoiceMonitorStore } from '@/stores/invoiceMonitorStore';
+import InvoicesMonitorSkeleton from '@/components/skeleton/InvoicesMonitorSkeleton.vue';
 
 // --- ESTADO DE LA VISTA ---
 const invoiceSearchTerm = ref('');
@@ -61,15 +62,14 @@ const df = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' });
 			<h1 class="text-2xl font-bold md:text-3xl">Monitor de Facturas</h1>
 		</div>
 
-		<!-- 6. Manejar los estados de carga y error -->
-		<div v-if="isLoading" class="text-center py-10">
-			<p>Cargando facturas...</p>
-		</div>
-		<div v-else-if="isError" class="text-center py-10 text-red-500">
+		<InvoicesMonitorSkeleton v-if="isLoading" />
+
+		<!-- 2. Muestra el mensaje de ERROR si algo falla -->
+		<div v-else-if="isError" class="py-10 text-center text-red-500">
 			<p>Error al cargar las facturas: {{ error?.message }}</p>
 		</div>
 
-		<!-- 7. Mostrar el contenido solo cuando la carga ha finalizado y no hay error -->
+		<!-- 3. Muestra el contenido REAL cuando la carga ha finalizado y no hay error -->
 		<div v-else class="space-y-4">
 			<div class="relative">
 				<Search

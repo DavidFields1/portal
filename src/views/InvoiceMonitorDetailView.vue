@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import {
@@ -19,7 +19,6 @@ import { toast } from 'vue-sonner';
 
 // --- IMPORTS DE LA APLICACIÓN ---
 import { useInvoiceMonitorStore } from '@/stores/invoiceMonitorStore';
-import { type InvoiceMonitor } from '@/schemas/invoiceSchemas';
 import { formatCurrency } from '@/lib/utils';
 
 // --- COMPONENTES UI ---
@@ -53,47 +52,45 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import InvoiceDetailSkeleton from '@/components/skeleton/InvoiceDetailSkeleton.vue';
+import type { Prorrateo } from '@/schemas/prorrateoSchemas';
+import type { Concept } from '@/schemas/conceptSchemas';
 
-// --- INTERFACES LOCALES (para prorrateo, ya que no vienen del store aún) ---
-interface Prorateo {
-	id: string;
-	cuentaContable: string;
-	centroCosto: string;
-	indicadorImpuesto: string;
-	importe: number;
-	porcentaje: number;
-}
-interface Concepto {
-	id: string;
-	descripcion: string;
-	cantidad: number;
-	unidad: string;
-	valorUnitario: number;
-	importe: number;
-	estatus: 'Pendiente' | 'Completado';
-	prorrateos: Prorateo[];
-}
+// --- INTERFACES LOCALES (para el formulario de prorrateo) ---
+// interface Prorateo {
+// 	id: string;
+// 	cuentaContable: string;
+// 	centroCosto: string;
+// 	indicadorImpuesto: string;
+// 	importe: number;
+// 	porcentaje: number;
+// }
+// interface Concepto {
+// 	id: string;
+// 	descripcion: string;
+// 	cantidad: number;
+// 	unidad: string;
+// 	valorUnitario: number;
+// 	importe: number;
+// 	estatus: 'Pendiente' | 'Completado';
+// 	prorrateos: Prorateo[];
+// }
 
 // --- ESTADO DE LA VISTA ---
 const route = useRoute();
 const router = useRouter();
 
 const invoiceMonitorStore = useInvoiceMonitorStore();
-const { invoices, isLoading } = storeToRefs(invoiceMonitorStore);
-
-const selectedInvoice = computed<InvoiceMonitor | undefined>(() => {
-	const uuid = route.params.uuid as string;
-	if (!invoices.value || invoices.value.length === 0) {
-		return undefined;
-	}
-	return invoices.value.find((inv) => inv.uuid === uuid);
-});
+// Extraemos los getters y acciones del store. `selectedInvoice` es ahora el objeto combinado.
+const { selectedInvoice, isConceptsLoading, isConceptsError, conceptsError } =
+	storeToRefs(invoiceMonitorStore);
+const { selectInvoiceForDetail, clearSelectedInvoice } = invoiceMonitorStore;
 
 // --- ESTADO DEL FORMULARIO ---
 const descripcion = ref('');
 const fechaContabilizacion = ref<DateValue>();
-const expandedConceptId = ref<string | null>(null);
-const showProrateoFormForConceptId = ref<string | null>(null);
+const expandedConceptId = ref<number | null>(null);
+const showProrateoFormForConceptId = ref<number | null>(null);
 const prorationType = ref<'importe' | 'porcentaje'>('importe');
 const editingProrateoId = ref<string | null>(null);
 
@@ -113,14 +110,22 @@ const cuentasContables = ref([
 const centrosCosto = ref(['Ventas', 'Marketing', 'IT', 'Administración']);
 const indicadoresImpuesto = ref(['IVA 16%', 'IVA 0%', 'Exento']);
 
-// --- MÉTODOS ---
+
+// --- MÉTODOS Y CICLO DE VIDA ---
 onMounted(() => {
-	if (!isLoading.value && !selectedInvoice.value) {
-		toast.error('Factura no encontrada', {
-			description: 'La factura que buscas no existe o fue eliminada.',
-		});
+	const uuid = route.params.uuid as string;
+	if (uuid) {
+		// Esta acción establece el UUID y dispara la carga de conceptos
+		selectInvoiceForDetail(uuid);
+	} else {
+		toast.error('No se encontró el identificador de la factura.');
 		router.replace('/invoices-monitor');
 	}
+});
+
+// Limpiamos el estado cuando el componente se destruye para no mostrar datos viejos
+onUnmounted(() => {
+	clearSelectedInvoice();
 });
 
 watch(
@@ -137,7 +142,7 @@ const goBackToList = () => {
 	router.push('/invoices-monitor');
 };
 
-const toggleConceptExpansion = (conceptId: string) => {
+const toggleConceptExpansion = (conceptId: number) => {
 	expandedConceptId.value =
 		expandedConceptId.value === conceptId ? null : conceptId;
 	showProrateoFormForConceptId.value = null;
@@ -149,7 +154,7 @@ const cancelProrateoForm = () => {
 	editingProrateoId.value = null;
 };
 
-const showAddProrateoForm = (conceptId: string) => {
+const showAddProrateoForm = (conceptId: number) => {
 	editingProrateoId.value = null;
 	newProrateoCuenta.value = '';
 	newProrateoCentroCosto.value = '';
@@ -159,38 +164,40 @@ const showAddProrateoForm = (conceptId: string) => {
 	showProrateoFormForConceptId.value = conceptId;
 };
 
-const editProrateo = (conceptId: string, prorateo: Prorateo) => {
-	editingProrateoId.value = prorateo.id;
-	newProrateoCuenta.value = prorateo.cuentaContable;
-	newProrateoCentroCosto.value = prorateo.centroCosto;
-	newProrateoImpuesto.value = prorateo.indicadorImpuesto;
+const editProrateo = (conceptId: number, prorateo: Prorrateo) => {
+	editingProrateoId.value = prorateo.id_prorrateo.toString();
+	newProrateoCuenta.value = prorateo.cuenta_contable;
+	newProrateoCentroCosto.value = prorateo.centro_costo;
+	newProrateoImpuesto.value = prorateo.indicador_impuesto;
 	if (prorationType.value === 'importe') {
-		newProrateoImporte.value = prorateo.importe;
+		newProrateoImporte.value = prorateo.valor_importe;
 		newProrateoPorcentaje.value = null;
 	} else {
-		newProrateoPorcentaje.value = prorateo.porcentaje;
+		newProrateoPorcentaje.value = prorateo.valor_porcentaje;
 		newProrateoImporte.value = null;
 	}
 	showProrateoFormForConceptId.value = conceptId;
 };
 
-const saveProrateo = (conceptId: string) => {
-	const concept = (selectedInvoice.value?.conceptos as Concepto[] | undefined)?.find(
+const saveProrateo = (conceptId: number) => {
+	const concept = selectedInvoice.value?.conceptos.find(
 		(c) => c.id === conceptId,
 	);
 	if (!concept) return;
 
-	// ... (Lógica de validación y guardado sin cambios)
+	// Aquí iría la lógica de validación y guardado real
+	// Por ahora, simulamos la adición/edición
 	toast.success('Prorrateo guardado (Simulado).');
 	cancelProrateoForm();
 };
 
-const deleteProrateo = (conceptId: string, prorateoId: string) => {
-	const concept = (selectedInvoice.value?.conceptos as Concepto[] | undefined)?.find(
+const deleteProrateo = (conceptId: number, prorateoId: number) => {
+	const concept = selectedInvoice.value?.conceptos.find(
 		(c) => c.id === conceptId,
 	);
 	if (!concept) return;
-	concept.prorrateos = concept.prorrateos.filter((p) => p.id !== prorateoId);
+	console.log(prorateoId);
+	// concept.prorrateos = concept.prorrateos.filter((p) => p.id_prorrateo !== prorateoId);
 	concept.estatus = 'Pendiente';
 	toast.info('Prorrateo eliminado.');
 };
@@ -212,18 +219,20 @@ watch(prorationType, (newType) => {
 
 <template>
 	<div class="container mx-auto py-6 md:py-10">
-		<div v-if="isLoading" class="py-10 text-center">
-			<p>Cargando datos de la factura...</p>
-		</div>
-		<div v-else-if="!selectedInvoice" class="py-10 text-center">
+		<!-- Estado de carga: se muestra mientras se cargan los conceptos o si la factura base aún no está disponible -->
+		<InvoiceDetailSkeleton v-if="isConceptsLoading || !selectedInvoice" />
+
+		<!-- 2. Muestra el mensaje de ERROR si falla la carga de conceptos -->
+		<div v-else-if="isConceptsError" class="py-10 text-center">
 			<p class="text-red-500">
-				La factura no fue encontrada. Puede que el enlace sea incorrecto.
+				Error al cargar los conceptos: {{ conceptsError?.message }}
 			</p>
 			<Button variant="outline" @click="goBackToList" class="mt-4">
 				<ArrowLeft class="mr-2 h-4 w-4" /> Volver al monitor
 			</Button>
 		</div>
 
+		<!-- 3. Muestra el contenido REAL cuando todo está cargado -->
 		<div v-else class="space-y-6">
 			<Button
 				variant="outline"
@@ -403,11 +412,11 @@ watch(prorationType, (newType) => {
 						</TableHeader>
 						<TableBody>
 							<template
-								v-for="concept in (selectedInvoice.conceptos as Concepto[])"
-								:key="concept.id"
+								v-for="concept in (selectedInvoice.conceptos as Concept[])"
+								:key="concept.id_concepto"
 							>
 								<TableRow
-									@click="toggleConceptExpansion(concept.id)"
+									@click="toggleConceptExpansion(concept.id_concepto)"
 									class="cursor-pointer"
 								>
 									<TableCell
@@ -437,7 +446,7 @@ watch(prorationType, (newType) => {
 										</Badge>
 									</TableCell>
 								</TableRow>
-								<TableRow v-if="expandedConceptId === concept.id">
+								<TableRow v-if="expandedConceptId === concept.id_concepto">
 									<TableCell colspan="6" class="bg-muted/50 p-4">
 										<div class="space-y-4">
 											<div
@@ -473,7 +482,7 @@ watch(prorationType, (newType) => {
 															variant="outline"
 															size="icon"
 															class="h-7 w-7"
-															@click="editProrateo(concept.id, p)"
+															@click="editProrateo(concept.id_concepto, p)"
 														>
 															<Pencil class="h-4 w-4" />
 														</Button>
@@ -481,7 +490,7 @@ watch(prorationType, (newType) => {
 															variant="destructive"
 															size="icon"
 															class="h-7 w-7"
-															@click="deleteProrateo(concept.id, p.id)"
+															@click="deleteProrateo(concept.id_concepto, p.id)"
 														>
 															<Trash2 class="h-4 w-4" />
 														</Button>
@@ -495,7 +504,7 @@ watch(prorationType, (newType) => {
 												No hay prorrateos para este concepto.
 											</p>
 											<div
-												v-if="showProrateoFormForConceptId === concept.id"
+												v-if="showProrateoFormForConceptId === concept.id_concepto"
 												class="space-y-4 border-t p-4"
 											>
 												<h4 class="font-semibold">
@@ -576,20 +585,20 @@ watch(prorationType, (newType) => {
 													<Button variant="ghost" @click="cancelProrateoForm"
 														>Cancelar</Button
 													>
-													<Button @click="saveProrateo(concept.id)"
+													<Button @click="saveProrateo(concept.id_concepto)"
 														>Guardar Prorrateo</Button
 													>
 												</div>
 											</div>
 											<Button
 												v-if="
-													showProrateoFormForConceptId !== concept.id &&
+													showProrateoFormForConceptId !== concept.id_concepto &&
 													concept.estatus !== 'Completado'
 												"
 												variant="outline"
 												size="sm"
 												class="w-full"
-												@click="showAddProrateoForm(concept.id)"
+												@click="showAddProrateoForm(concept.id_concepto)"
 											>
 												<PlusCircle class="mr-2 h-4 w-4" /> Agregar
 												Prorrateo
