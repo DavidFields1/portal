@@ -96,22 +96,22 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 
 		// Mapeamos los conceptos de la API a la estructura que espera el componente
 		// y los añadimos a la factura base.
-		const mappedConcepts = (conceptsData ?? []).map((c) => ({
-			id: c.id_concepto, // El componente espera un ID de string
-			descripcion: c.descripcion,
-			cantidad: c.cantidad,
-			unidad: c.unidad,
-			valorUnitario: c.valor_unitario,
-			importe: c.importe,
-			// Aseguramos que el estatus coincida con los valores esperados
-			estatus: c.estatus === 'Completado' ? 'Completado' : ('Pendiente' as const),
-			// Inicializamos los prorrateos como un array vacío
-			prorrateos: [],
-		}));
+		// const mappedConcepts = (conceptsData ?? []).map((c) => ({
+		// 	id: c.id_concepto, // El componente espera un ID de string
+		// 	descripcion: c.descripcion,
+		// 	cantidad: c.cantidad,
+		// 	unidad: c.unidad,
+		// 	valorUnitario: c.valor_unitario,
+		// 	importe: c.importe,
+		// 	// Aseguramos que el estatus coincida con los valores esperados
+		// 	estatus: c.estatus === 'Completado' ? 'Completado' : ('Pendiente' as const),
+		// 	// Inicializamos los prorrateos como un array vacío
+		// 	prorrateos: [],
+		// }));
 
 		return {
 			...base,
-			conceptos: mappedConcepts,
+			conceptos: conceptsData,
 		};
 	});
 

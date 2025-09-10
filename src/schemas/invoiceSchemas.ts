@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConceptSchema } from './conceptSchemas';
 
 export const StepSchema = z.object({
 	id: z.string(),
@@ -51,7 +52,7 @@ export const InvoiceSchema = z.object({
 	documento_contable: z.string().nullable(),
 	ejercicio_fiscal: z.string().nullable(),
 	sociedad: z.string(),
-	conceptos: z.any().nullable(), // Se puede detallar más si se conoce la estructura
+	conceptos: z.array(ConceptSchema).nullable(), // Se puede detallar más si se conoce la estructura
 	id_proveedor_sap: z.string(),
 });
 
