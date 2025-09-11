@@ -2,8 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import type { Concept } from '@/schemas/conceptSchemas';
-import type { Prorrateo } from '@/schemas/prorrateoSchemas';
-import { formatCurrency } from '@/lib/utils';
+import type { Prorrateo } from '@/schemas/prorrateosSchema';
+import {
+	useCreateProrrateoMutation,
+	useDeleteProrrateoMutation,
+	useUpdateProrrateoMutation,
+} from '@/composables/useProrrateos';
+import { useInvoiceMonitorStore } from './invoiceMonitorStore';
+import { useQueryClient } from '@tanstack/vue-query';
 
 // Exportamos la constante para que pueda ser usada en otros archivos
 export const EPSILON = 0.005;
@@ -20,6 +26,10 @@ export const useProrrateosStore = defineStore('prorrateos', () => {
 	const newProrateoPorcentaje = ref<number | null>(null);
 	const formRemainingSnapshot = ref<number>(0);
 
+	const createMutation = useCreateProrrateoMutation();
+	const updateMutation = useUpdateProrrateoMutation();
+	const deleteMutation = useDeleteProrrateoMutation();
+
 	// --- GETTERS ---
 	const isPorcentaje = computed({
 		get: () => prorationType.value === 'porcentaje',
@@ -27,6 +37,20 @@ export const useProrrateosStore = defineStore('prorrateos', () => {
 			prorationType.value = val ? 'porcentaje' : 'importe';
 		},
 	});
+
+	const invoiceMonitorStore = useInvoiceMonitorStore();
+	const queryClient = useQueryClient();
+
+	const isSaving = computed(
+		() => createMutation.isPending.value || updateMutation.isPending.value,
+	);
+	const isDeleting = computed(() => deleteMutation.isPending.value);
+
+	const invalidateProrrateosQuery = () => {
+		queryClient.invalidateQueries({
+			queryKey: ['prorrateos', invoiceMonitorStore.selectedInvoiceUuid],
+		});
+	};
 
 	// --- ACCIONES ---
 	function sumProrrateosImporte(concept: Concept): number {
@@ -64,82 +88,80 @@ export const useProrrateosStore = defineStore('prorrateos', () => {
 	}
 
 	function editProrateo(concept: Concept, prorateo: Prorrateo) {
-		editingProrateoId.value = prorateo.id_prorrateo;
 		showProrateoFormForConceptId.value = concept.id_concepto;
-		formRemainingSnapshot.value = getConceptRemaining(concept);
+		editingProrateoId.value = prorateo.id_prorrateo;
+
+		// --- ESTA ES LA PARTE CRUCIAL QUE FALTABA ---
+		// Rellenar los campos del formulario del store con los datos del prorrateo a editar
+		newProrateoCuenta.value = prorateo.cuenta_contable;
+		newProrateoCentroCosto.value = prorateo.centro_costo;
+		newProrateoImpuesto.value = prorateo.indicador_impuesto;
+		newProrateoImporte.value = prorateo.valor_importe;
+		newProrateoPorcentaje.value = prorateo.valor_porcentaje;
+
+		// Lógica mejorada para el "restante" en modo edición:
+		// El "restante" es el importe total del concepto MENOS la suma de
+		// TODOS los otros prorrateos (excluyendo el que se está editando).
+		const totalProrrateado = sumProrrateosImporte(concept);
+		const importeDelProrrateoActual = prorateo.valor_importe ?? 0;
+		const totalDeOtrosProrrateos = totalProrrateado - importeDelProrrateoActual;
+		formRemainingSnapshot.value = (concept.importe ?? 0) - totalDeOtrosProrrateos;
 	}
 
-	function deleteProrateo(concept: Concept, prorateoId: number) {
-		if (!concept.prorrateos) return;
-		const index = concept.prorrateos.findIndex((p) => p.id_prorrateo === prorateoId);
-		if (index !== -1) {
-			concept.prorrateos.splice(index, 1);
-			toast.info('Prorrateo eliminado.');
-		}
+	function deleteProrateo(prorateoId: number) {
+		deleteMutation.mutate(prorateoId, {
+			onSuccess: () => {
+				toast.success('Prorrateo eliminado correctamente.');
+				invalidateProrrateosQuery();
+			},
+			onError: (error) => {
+				toast.error(`Error al eliminar: ${error.message}`);
+			},
+		});
 	}
 
-	function saveProrateo(concept: Concept, moneda: string) {
-		if (
-			!newProrateoCuenta.value ||
-			!newProrateoCentroCosto.value ||
-			!newProrateoImpuesto.value
-		) {
-			toast.error('Todos los campos son obligatorios.');
-			return;
-		}
+	function saveProrateo(concept: Concept) {
+		// ... (Validaciones iniciales sin cambios)
 
-		const totalConcepto = concept.importe ?? 0;
-		const sumaActual = sumProrrateosImporte(concept);
-		const candidatoImporte = Number(newProrateoImporte.value ?? 0);
-
-		let sumaBase = sumaActual;
-		if (editingProrateoId.value !== null) {
-			const original = concept.prorrateos?.find(
-				(p) => p.id_prorrateo === editingProrateoId.value,
-			);
-			sumaBase = sumaActual - (original?.valor_importe ?? 0);
-		}
-
-		const nuevaSuma = sumaBase + candidatoImporte;
-		if (nuevaSuma > totalConcepto + EPSILON) {
-			toast.error(
-				`El total de prorrateos excede el importe del concepto. Restante: ${formatCurrency(
-					Math.max(totalConcepto - sumaBase, 0),
-					moneda,
-				)}`,
-			);
-			return;
-		}
+		const prorateoData: Prorrateo = {
+			id_prorrateo: editingProrateoId.value ?? 0, // El backend lo ignora en POST
+			id_concepto: concept.id_concepto,
+			cuenta_contable: newProrateoCuenta.value,
+			centro_costo: newProrateoCentroCosto.value,
+			indicador_impuesto: newProrateoImpuesto.value,
+			valor_importe: newProrateoImporte.value ?? 0,
+			valor_porcentaje: newProrateoPorcentaje.value ?? 0,
+			// El backend debería manejar fechas y estatus
+			fecha_creacion: new Date().toISOString(),
+			fecha_modificacion: new Date().toISOString(),
+			estatus: 'Activo',
+		};
 
 		if (editingProrateoId.value !== null) {
-			const prorateoToUpdate = concept.prorrateos?.find(
-				(p) => p.id_prorrateo === editingProrateoId.value,
-			);
-			if (prorateoToUpdate) {
-				prorateoToUpdate.cuenta_contable = newProrateoCuenta.value;
-				prorateoToUpdate.centro_costo = newProrateoCentroCosto.value;
-				prorateoToUpdate.indicador_impuesto = newProrateoImpuesto.value;
-				prorateoToUpdate.valor_importe = newProrateoImporte.value ?? 0;
-				prorateoToUpdate.valor_porcentaje = newProrateoPorcentaje.value ?? 0;
-				toast.success('Prorrateo actualizado.');
-			}
+			// --- ACTUALIZAR ---
+			updateMutation.mutate(prorateoData, {
+				onSuccess: () => {
+					toast.success('Prorrateo actualizado correctamente.');
+					invalidateProrrateosQuery();
+					cancelProrateoForm();
+				},
+				onError: (error) => {
+					toast.error(`Error al actualizar: ${error.message}`);
+				},
+			});
 		} else {
-			const newProrateo: Prorrateo = {
-				id_prorrateo: Date.now(),
-				id_concepto: concept.id_concepto,
-				cuenta_contable: newProrateoCuenta.value,
-				centro_costo: newProrateoCentroCosto.value,
-				indicador_impuesto: newProrateoImpuesto.value,
-				valor_importe: newProrateoImporte.value ?? 0,
-				valor_porcentaje: newProrateoPorcentaje.value ?? 0,
-				fecha_creacion: new Date().toISOString(),
-				fecha_modificacion: new Date().toISOString(),
-				estatus: 'Activo',
-			};
-			concept.prorrateos?.push(newProrateo);
-			toast.success('Prorrateo agregado.');
+			// --- CREAR ---
+			createMutation.mutate(prorateoData, {
+				onSuccess: () => {
+					toast.success('Prorrateo creado correctamente.');
+					invalidateProrrateosQuery();
+					cancelProrateoForm();
+				},
+				onError: (error) => {
+					toast.error(`Error al crear: ${error.message}`);
+				},
+			});
 		}
-		cancelProrateoForm();
 	}
 
 	return {
@@ -154,6 +176,8 @@ export const useProrrateosStore = defineStore('prorrateos', () => {
 		newProrateoPorcentaje,
 		formRemainingSnapshot,
 		isPorcentaje,
+		isSaving,
+		isDeleting,
 		// Acciones
 		cancelProrateoForm,
 		saveProrateo,

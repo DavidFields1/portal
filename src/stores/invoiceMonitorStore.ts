@@ -8,7 +8,7 @@ import {
 	type InvoiceMonitor,
 } from '@/schemas/invoiceSchemas';
 import { ConceptResponseSchema, type Concept } from '@/schemas/conceptSchemas';
-import type { Prorrateo } from '@/schemas/prorrateoSchemas';
+import type { Prorrateo } from '@/schemas/prorrateosSchema';
 
 interface InvoiceFilters {
 	estatus: string;
@@ -63,7 +63,11 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 				params,
 			});
 			const parsedData = ConceptResponseSchema.parse(data);
-			return parsedData.object;
+			// return parsedData.object;
+			return parsedData.object.map((concept) => ({
+				...concept,
+				prorrateos: [],
+			}));
 		},
 		enabled: computed(() => !!selectedInvoiceUuid.value),
 		refetchOnWindowFocus: false,
@@ -99,7 +103,7 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 
 		return {
 			...base,
-			conceptos: conceptsData ?? null,  // Ensure we return null if conceptsData is undefined
+			conceptos: conceptsData ?? null, // Ensure we return null if conceptsData is undefined
 		};
 	});
 
@@ -125,17 +129,22 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		selectedInvoiceUuid.value = null;
 	};
 
-	// PRORRATEO
-	const addProrateo = (conceptId: number, newProrateo: Prorrateo) => {
-		console.log('add prorrateo', conceptId, newProrateo);
-	};
+	const _mergeProrateosIntoConcepts = (prorrateos: Prorrateo[]) => {
+		if (!conceptsQuery.data.value || !prorrateos) return;
 
-	const updateProrateo = (conceptId: number, updatedProrateo: Prorrateo) => {
-		console.log('update prorrateo', conceptId, updatedProrateo);
-	};
+		// Crear un mapa para agrupar prorrateos por id_concepto
+		const prorrateosByConceptId = new Map<number, Prorrateo[]>();
+		for (const p of prorrateos) {
+			if (!prorrateosByConceptId.has(p.id_concepto)) {
+				prorrateosByConceptId.set(p.id_concepto, []);
+			}
+			prorrateosByConceptId.get(p.id_concepto)?.push(p);
+		}
 
-	const deleteProrateo = (conceptId: number, prorateoId: number) => {
-		console.log('delete prorrateo', conceptId, prorateoId);
+		// Asignar los prorrateos a cada concepto
+		conceptsQuery.data.value.forEach((concept) => {
+			concept.prorrateos = prorrateosByConceptId.get(concept.id_concepto) ?? [];
+		});
 	};
 
 	return {
@@ -163,8 +172,6 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		resetFilters,
 		selectInvoiceForDetail,
 		clearSelectedInvoice,
-		addProrateo,
-		updateProrateo,
-		deleteProrateo,
+		_mergeProrateosIntoConcepts,
 	};
 });

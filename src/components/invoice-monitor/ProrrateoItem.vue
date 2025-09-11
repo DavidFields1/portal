@@ -3,7 +3,7 @@ import { Pencil, Trash2 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 
-import type { Prorrateo } from '@/schemas/prorrateoSchemas';
+import type { Prorrateo } from '@/schemas/prorrateosSchema';
 import type { Concept } from '@/schemas/conceptSchemas';
 import type { InvoiceMonitor } from '@/schemas/invoiceSchemas';
 import ProrrateoForm from './ProrrateoForm.vue';

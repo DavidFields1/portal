@@ -1,7 +1,11 @@
 import axiosInstance from '@/config/axiosInstance';
-import { ProrrateosResponseSchema, type ProrrateosResponse } from '@/schemas/prorrateosSchema';
+import {
+	ProrrateosResponseSchema,
+	type ProrrateosResponse,
+	type Prorrateo,
+} from '@/schemas/prorrateosSchema';
 import { type PurchaseOrderResponse } from '@/schemas/purchaseOrder';
-import { useQuery, type UseQueryOptions } from '@tanstack/vue-query';
+import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/vue-query';
 import { toValue, type Ref } from 'vue';
 
 type UseOrdenesCompraSAPQueryOptions = Omit<
@@ -34,5 +38,32 @@ export function useProrrateosQuery(
 		refetchOnReconnect: false,
 		retry: false,
 		...options,
+	});
+}
+
+export function useCreateProrrateoMutation() {
+	return useMutation({
+		mutationFn: async (prorrateoData: Prorrateo) => {
+			const { data } = await axiosInstance.post('/factura/prorrateo', prorrateoData);
+			return data;
+		},
+	});
+}
+
+export function useUpdateProrrateoMutation() {
+	return useMutation({
+		mutationFn: async (prorrateoData: Prorrateo) => {
+			const { data } = await axiosInstance.put('/factura/prorrateo', prorrateoData);
+			return data;
+		},
+	});
+}
+
+export function useDeleteProrrateoMutation() {
+	return useMutation({
+		mutationFn: async (idProrrateo: number) => {
+			const { data } = await axiosInstance.delete('/factura/prorrateo/borrar/' + idProrrateo);
+			return data;
+		},
 	});
 }

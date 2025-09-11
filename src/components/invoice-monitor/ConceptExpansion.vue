@@ -24,7 +24,7 @@ const { getConceptRemaining, showAddProrateoForm, editProrateo, deleteProrateo }
         <div v-if="concept.prorrateos && concept.prorrateos.length > 0" class="space-y-3">
             <ProrrateoItem v-for="prorateo in concept.prorrateos" :key="prorateo.id_prorrateo" :prorateo="prorateo"
                 :concept="concept" :invoice="invoice" :is-editing="prorateo.id_prorrateo === editingProrateoId"
-                @edit="editProrateo(concept, prorateo)" @delete="deleteProrateo(concept, prorateo.id_prorrateo)" />
+                @edit="editProrateo(concept, prorateo)" @delete="deleteProrateo(prorateo.id_prorrateo)" />
         </div>
 
         <!-- Mensaje cuando no hay prorrateos -->

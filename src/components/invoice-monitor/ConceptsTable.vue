@@ -98,7 +98,7 @@ const toggleConceptExpansion = (conceptId: number) => {
                                 {{ formatCurrency(concept.importe, invoice.moneda) }}
                             </TableCell>
                             <TableCell>
-                                <Badge :variant="concept.estatus === 'Completado' ? 'success' : 'destructive'
+                                <Badge :variant="concept.estatus === 'ACTIVO' ? 'success' : 'destructive'
                                     ">
                                     {{ concept.estatus }}
                                 </Badge>

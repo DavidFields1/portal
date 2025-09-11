@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, nextTick } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { LoaderCircle } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,8 @@ import SearchableSelect from './SearchableSelect.vue';
 import { formatCurrency } from '@/lib/utils';
 import type { Concept } from '@/schemas/conceptSchemas';
 import type { InvoiceMonitor } from '@/schemas/invoiceSchemas';
-import type { Prorrateo } from '@/schemas/prorrateoSchemas';
-import { useProrrateosStore } from '@/stores/prorrateosStore';
+import type { Prorrateo } from '@/schemas/prorrateosSchema';
+import { EPSILON, useProrrateosStore } from '@/stores/prorrateosStore';
 import { useCentrosCostoSAPQuery, useCuentasGastoSAPQuery, useIndicadoresIvaSAPQuery } from '@/composables/useCatalogoSAP';
 
 const props = withDefaults(
@@ -36,6 +36,8 @@ const {
     newProrateoImporte,
     newProrateoPorcentaje,
     formRemainingSnapshot,
+    isSaving,
+    editingProrateoId,
 } = storeToRefs(prorrateosStore);
 const { cancelProrateoForm, saveProrateo } = prorrateosStore;
 
@@ -43,16 +45,7 @@ const sociedadFactura = computed(() => props.invoice?.sociedad ?? '');
 const areCatalogsEnabled = ref(false);
 
 onMounted(() => {
-    areCatalogsEnabled.value = true;
-    if (props.mode === 'edit' && props.prorateo) {
-        nextTick(() => {
-            newProrateoCuenta.value = props.prorateo!.cuenta_contable;
-            newProrateoCentroCosto.value = props.prorateo!.centro_costo;
-            newProrateoImpuesto.value = props.prorateo!.indicador_impuesto;
-            newProrateoImporte.value = props.prorateo!.valor_importe;
-            newProrateoPorcentaje.value = props.prorateo!.valor_porcentaje;
-        });
-    }
+	areCatalogsEnabled.value = true;
 });
 
 const { data: cuentasGasto, isLoading: isCuentasGastoLoading } =
@@ -97,9 +90,56 @@ function handlePorcentajeChange(value: string | number) {
     }
 }
 
-const handleSave = () => saveProrateo(props.concept, props.invoice.moneda);
+const handleSave = () => saveProrateo(props.concept);
 const handleCancel = () => cancelProrateoForm();
 const formTitle = computed(() => (props.mode === 'edit' ? 'Editar Prorrateo' : 'Nuevo Prorrateo'));
+
+const validationStatus = computed(() => {
+	const totalConcepto = props.concept?.importe ?? 0;
+	const candidatoImporte = newProrateoImporte.value ?? 0;
+
+	if (candidatoImporte <= 0) {
+		// No validar si el campo está vacío o es cero,
+		// la validación de campos obligatorios se hace al guardar.
+		return { isValid: true, message: '' };
+	}
+
+	// 1. Suma total de los prorrateos ya existentes en el concepto.
+	const sumaActualProrrateos = (props.concept.prorrateos ?? []).reduce(
+		(acc, p) => acc + (p?.valor_importe ?? 0),
+		0,
+	);
+
+	// 2. Base para el cálculo. Por defecto es la suma actual.
+	let sumaBase = sumaActualProrrateos;
+
+	// 3. Si estamos editando, la base es la suma actual MENOS el valor original
+	//    del prorrateo que estamos editando.
+	if (props.mode === 'edit' && editingProrateoId.value !== null) {
+		const prorrateoOriginal = props.concept.prorrateos?.find(
+			(p) => p.id_prorrateo === editingProrateoId.value,
+		);
+		sumaBase = sumaActualProrrateos - (prorrateoOriginal?.valor_importe ?? 0);
+	}
+
+	// 4. La nueva suma propuesta es la base + el nuevo valor del formulario.
+	const nuevaSumaPropuesta = sumaBase + candidatoImporte;
+
+	// 5. Comparamos contra el total del concepto.
+	if (nuevaSumaPropuesta > totalConcepto + EPSILON) {
+		const restanteReal = Math.max(totalConcepto - sumaBase, 0);
+		return {
+			isValid: false,
+			message: `El importe excede el límite. Máximo disponible: ${formatCurrency(
+				restanteReal,
+				props.invoice.moneda,
+			)}`,
+		};
+	}
+
+	// Si todo está bien
+	return { isValid: true, message: '' };
+});
 </script>
 
 <template>
@@ -159,26 +199,56 @@ const formTitle = computed(() => (props.mode === 'edit' ? 'Editar Prorrateo' : '
 
             <!-- Campos de Valor -->
             <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                    <Label>Importe</Label>
-                    <Input type="number" step="0.01" :model-value="newProrateoImporte?.toString() ?? ''"
-                        @update:model-value="handleImporteChange" :disabled="prorationType === 'porcentaje'"
-                        placeholder="0.00" />
-                </div>
-                <div class="space-y-1">
-                    <Label>Porcentaje (%)</Label>
-                    <Input type="number" step="0.01" :model-value="newProrateoPorcentaje?.toString() ?? ''"
-                        @update:model-value="handlePorcentajeChange" :disabled="prorationType === 'importe'"
-                        placeholder="0.00" />
-                </div>
-            </div>
+				<div class="space-y-1">
+					<Label>Importe</Label>
+					<Input
+						type="number"
+						step="0.01"
+						:model-value="newProrateoImporte?.toString() ?? ''"
+						@update:model-value="handleImporteChange"
+						:disabled="prorationType === 'porcentaje'"
+						placeholder="0.00"
+					/>
+				</div>
+				<div class="space-y-1">
+					<Label>Porcentaje (%)</Label>
+					<Input
+						type="number"
+						step="0.01"
+						:model-value="newProrateoPorcentaje?.toString() ?? ''"
+						@update:model-value="handlePorcentajeChange"
+						:disabled="prorationType === 'importe'"
+						placeholder="0.00"
+					/>
+				</div>
+			</div>
+
+            <!-- Validación -->
+            <p
+				v-if="!validationStatus.isValid"
+				class="text-sm text-red-600 dark:text-red-500"
+			>
+				{{ validationStatus.message }}
+			</p>
 
             <!-- Botones -->
             <div class="flex justify-end gap-2">
-                <Button variant="ghost" type="button" @click.stop="handleCancel">Cancelar</Button>
-                <Button type="button" @click="handleSave">{{ mode === 'edit' ? 'Guardar Cambios' : 'Guardar Prorrateo'
-                }}</Button>
-            </div>
+				<Button
+					variant="ghost"
+					type="button"
+					@click.stop="handleCancel"
+					:disabled="isSaving"
+					>Cancelar</Button
+				>
+				<Button
+					type="button"
+					@click="handleSave"
+					:disabled="isSaving || !validationStatus.isValid"
+				>
+					<LoaderCircle v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
+					{{ mode === 'edit' ? 'Guardar Cambios' : 'Guardar Prorrateo' }}
+				</Button>
+			</div>
         </div>
     </div>
 </template>

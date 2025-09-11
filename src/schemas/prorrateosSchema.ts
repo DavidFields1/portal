@@ -20,5 +20,5 @@ export const ProrrateosResponseSchema = z.object({
 	errorDescription: z.string().nullable(),
 });
 
-export type Prorrateos = z.infer<typeof ProrrateosSchema>;
+export type Prorrateo = z.infer<typeof ProrrateosSchema>;
 export type ProrrateosResponse = z.infer<typeof ProrrateosResponseSchema>;

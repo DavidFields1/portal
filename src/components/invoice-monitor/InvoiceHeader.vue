@@ -20,7 +20,7 @@ defineProps<{
     <Card>
         <CardHeader>
             <CardTitle class="text-2xl">
-                Factura: <span class="text-primary">{{ invoice.folio }}</span>
+                Factura: <span class="text-primary">{{ invoice.uuid }}</span>
             </CardTitle>
             <CardDescription class="text-lg">
                 Proveedor: {{ invoice.razonsocial_emisor }}

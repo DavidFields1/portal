@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProrrateoSchema } from './prorrateoSchemas';
+import { ProrrateosSchema } from './prorrateosSchema';
 
 export const ConceptSchema = z.object({
 	id_concepto: z.number(),
@@ -12,7 +12,7 @@ export const ConceptSchema = z.object({
 	valor_unitario: z.number(),
 	importe: z.number(),
 	estatus: z.string(),
-	prorrateos: z.array(ProrrateoSchema).nullable().optional(),
+	prorrateos: z.array(ProrrateosSchema).nullable().optional(),
 	fecha_creacion: z.string(),
 	fecha_modificacion: z.string(),
 });
