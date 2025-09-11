@@ -110,8 +110,6 @@ const getStatusBadgeVariant = (status: string) => {
 	}
 }
 
-import { formatCurrency } from '@/lib/utils'
-
 // Función para descargar la factura
 const downloadPDF = () => {
 	console.log(`Descargando Factura`)

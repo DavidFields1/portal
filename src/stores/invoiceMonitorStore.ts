@@ -1,29 +1,35 @@
-// src/stores/invoiceMonitorStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import axiosInstance from '@/config/axiosInstance';
-import { InvoiceMonitorResponseSchema, type InvoiceMonitor } from '@/schemas/invoiceSchemas';
+import {
+	InvoiceMonitorResponseSchema,
+	// type InvoiceData,
+	type InvoiceMonitor,
+} from '@/schemas/invoiceSchemas';
 import { ConceptResponseSchema, type Concept } from '@/schemas/conceptSchemas';
+import type { Prorrateo } from '@/schemas/prorrateoSchemas';
 
-// Interfaz para los filtros de búsqueda
 interface InvoiceFilters {
 	estatus: string;
 	fechaOrigen: string;
 	fechaLimite: string;
-	tipoFechaBusqueda: string; // por ejemplo: 'creacion', 'expedicion'
+	tipoFechaBusqueda: string;
 }
 
 export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
+	// ! STATE
 	const filters = ref<InvoiceFilters>({
 		estatus: '',
 		fechaOrigen: '',
 		fechaLimite: '',
 		tipoFechaBusqueda: '',
 	});
-
+	const selectedInvoiceUuid = ref<string | null>(null);
 	const searchAfter = ref(0);
+	// const selectedInvoice = ref<InvoiceData | null>(null);
 
+	// ! QUERIES
 	const invoicesQuery = useQuery({
 		queryKey: ['invoices', filters],
 		queryFn: async (): Promise<InvoiceMonitor[]> => {
@@ -45,8 +51,6 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		refetchOnWindowFocus: false,
 		staleTime: 1000 * 60 * 5,
 	});
-
-	const selectedInvoiceUuid = ref<string | null>(null);
 	const conceptsQuery = useQuery({
 		queryKey: ['concepts', selectedInvoiceUuid],
 		queryFn: async (): Promise<Concept[]> => {
@@ -66,15 +70,14 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		staleTime: 1000 * 60 * 10,
 	});
 
-	// --- GETTERS (usando computed) ---
-
-	// Un getter computado para acceder fácilmente a la lista de facturas.
-	// Devuelve un array vacío si los datos aún no están disponibles.
+	// ! GETTERS
+	// FACTURAS
 	const invoices = computed(() => invoicesQuery.data.value ?? []);
 	const isLoading = computed(() => invoicesQuery.isLoading.value);
 	const isError = computed(() => invoicesQuery.isError.value);
 	const error = computed(() => invoicesQuery.error.value);
 
+	// CONCEPTOS
 	const isConceptsLoading = computed(() => conceptsQuery.isLoading.value);
 	const isConceptsError = computed(() => conceptsQuery.isError.value);
 	const conceptsError = computed(() => conceptsQuery.error.value);
@@ -87,55 +90,26 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		return invoices.value.find((inv) => inv.uuid === selectedInvoiceUuid.value) ?? null;
 	});
 
-	// --- GETTER PRINCIPAL: COMBINA LA FACTURA BASE CON SUS CONCEPTOS ---
-	const selectedInvoice = computed(() => {
+	// COMBINA LA FACTURA BASE CON SUS CONCEPTOS
+	const selectedInvoiceWithConcepts = computed(() => {
 		const base = selectedInvoiceBase.value;
 		const conceptsData = conceptsQuery.data.value;
 
 		if (!base) return null;
 
-		// Mapeamos los conceptos de la API a la estructura que espera el componente
-		// y los añadimos a la factura base.
-		// const mappedConcepts = (conceptsData ?? []).map((c) => ({
-		// 	id: c.id_concepto, // El componente espera un ID de string
-		// 	descripcion: c.descripcion,
-		// 	cantidad: c.cantidad,
-		// 	unidad: c.unidad,
-		// 	valorUnitario: c.valor_unitario,
-		// 	importe: c.importe,
-		// 	// Aseguramos que el estatus coincida con los valores esperados
-		// 	estatus: c.estatus === 'Completado' ? 'Completado' : ('Pendiente' as const),
-		// 	// Inicializamos los prorrateos como un array vacío
-		// 	prorrateos: [],
-		// }));
-
 		return {
 			...base,
-			conceptos: conceptsData,
+			conceptos: conceptsData ?? null,  // Ensure we return null if conceptsData is undefined
 		};
 	});
 
-	// --- ACCIONES ---
-
-	/**
-	 * Actualiza los filtros y dispara automáticamente una nueva llamada a la API
-	 * gracias a la reactividad de la queryKey en `useQuery`.
-	 * @param newFilters - Un objeto con los nuevos valores de filtro.
-	 */
+	// ! ACCIONES
 	const setFilters = (newFilters: Partial<InvoiceFilters>) => {
 		filters.value = { ...filters.value, ...newFilters };
 	};
-
-	/**
-	 * Permite forzar una recarga manual de los datos.
-	 */
 	const refetchInvoices = () => {
 		return invoicesQuery.refetch();
 	};
-
-	/**
-	 * Reinicia los filtros a su estado inicial.
-	 */
 	const resetFilters = () => {
 		filters.value = {
 			estatus: '',
@@ -144,28 +118,35 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 			tipoFechaBusqueda: '',
 		};
 	};
-
 	const selectInvoiceForDetail = (uuid: string) => {
 		selectedInvoiceUuid.value = uuid;
 	};
-
-	/**
-	 * Limpia el UUID de la factura seleccionada, desactivando la query.
-	 */
 	const clearSelectedInvoice = () => {
 		selectedInvoiceUuid.value = null;
 	};
 
-	// Exponer el estado, getters y acciones para que puedan ser usados en los componentes
+	// PRORRATEO
+	const addProrateo = (conceptId: number, newProrateo: Prorrateo) => {
+		console.log('add prorrateo', conceptId, newProrateo);
+	};
+
+	const updateProrateo = (conceptId: number, updatedProrateo: Prorrateo) => {
+		console.log('update prorrateo', conceptId, updatedProrateo);
+	};
+
+	const deleteProrateo = (conceptId: number, prorateoId: number) => {
+		console.log('delete prorrateo', conceptId, prorateoId);
+	};
+
 	return {
 		// Estado
 		filters,
+		selectedInvoiceUuid,
+		selectedInvoice: selectedInvoiceWithConcepts,
 
-		// Queries (para acceso a más detalles como isFetching, etc.)
+		// Queries
 		invoicesQuery,
 		conceptsQuery,
-		selectedInvoiceUuid,
-		selectedInvoice,
 
 		// Getters
 		invoices,
@@ -182,5 +163,8 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 		resetFilters,
 		selectInvoiceForDetail,
 		clearSelectedInvoice,
+		addProrateo,
+		updateProrateo,
+		deleteProrateo,
 	};
 });
