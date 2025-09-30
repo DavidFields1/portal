@@ -73,36 +73,22 @@ const handleXMLFileChange = (event: Event) => {
 			<CardTitle>Proceso de Carga</CardTitle>
 			<nav aria-label="Progreso de carga" class="mt-4">
 				<ol class="space-y-4">
-					<li
-						v-for="(step, index) in props.steps"
-						:key="step.id"
-						class="flex items-center text-sm"
-					>
-						<span
-							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mr-3"
-							:class="{
-								'bg-primary text-primary-foreground':
-									index === props.currentStepIndex,
-								'bg-green-600 text-white': index < props.currentStepIndex,
-								'bg-muted text-muted-foreground border':
-									index > props.currentStepIndex,
-							}"
-						>
-							<component
-								v-if="index < props.currentStepIndex"
-								:is="CheckCircle"
-								class="h-4 w-4"
-							/>
+					<li v-for="(step, index) in props.steps" :key="step.id" class="flex items-center text-sm">
+						<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full mr-3" :class="{
+							'bg-primary text-primary-foreground':
+								index === props.currentStepIndex,
+							'bg-green-600 text-white': index < props.currentStepIndex,
+							'bg-muted text-muted-foreground border':
+								index > props.currentStepIndex,
+						}">
+							<component v-if="index < props.currentStepIndex" :is="CheckCircle" class="h-4 w-4" />
 							<component v-else :is="step.icon" class="h-4 w-4" />
 						</span>
-						<span
-							class="font-medium"
-							:class="{
-								'text-primary': index === props.currentStepIndex,
-								'text-green-700': index < props.currentStepIndex,
-								'text-muted-foreground': index > props.currentStepIndex,
-							}"
-						>
+						<span class="font-medium" :class="{
+							'text-primary': index === props.currentStepIndex,
+							'text-green-700': index < props.currentStepIndex,
+							'text-muted-foreground': index > props.currentStepIndex,
+						}">
 							{{ step.name }}
 						</span>
 					</li>
@@ -118,10 +104,7 @@ const handleXMLFileChange = (event: Event) => {
 
 			<!-- Paso 1: Seleccionar Entradas -->
 			<div v-if="props.currentStepIndex === 1" class="space-y-4">
-				<div
-					v-if="props.selectedGRs.length === 0"
-					class="text-center text-muted-foreground py-4"
-				>
+				<div v-if="props.selectedGRs.length === 0" class="text-center text-muted-foreground py-4">
 					<p class="text-sm">
 						Selecciona una o más entradas de mercancía para continuar.
 					</p>
@@ -142,77 +125,40 @@ const handleXMLFileChange = (event: Event) => {
 				<h4 class="font-semibold">Subir Archivos de Factura</h4>
 				<div>
 					<Label class="font-medium">Archivo PDF</Label>
-					<div
-						class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center mt-1"
-					>
-						<input
-							type="file"
-							id="pdf-upload-stepper"
-							accept=".pdf"
-							class="sr-only"
-							@change="handlePDFFileChange"
-						/>
+					<div class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center mt-1">
+						<input type="file" id="pdf-upload-stepper" accept=".pdf" class="sr-only"
+							@change="handlePDFFileChange" />
 						<label for="pdf-upload-stepper" class="cursor-pointer">
 							<UploadCloud class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 							<p class="text-xs font-medium">Clic para subir PDF</p>
 						</label>
 					</div>
-					<div
-						v-if="props.pdfFile"
-						class="flex items-center justify-between p-2 bg-muted rounded-lg mt-2 text-sm"
-					>
+					<div v-if="props.pdfFile"
+						class="flex items-center justify-between p-2 bg-muted rounded-lg mt-2 text-sm">
 						<span class="truncate">{{ props.pdfFile.name }}</span>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="h-6 w-6"
-							@click="props.onRemovePDF"
-							>✕</Button
-						>
+						<Button variant="ghost" size="icon" class="h-6 w-6" @click="props.onRemovePDF">✕</Button>
 					</div>
 				</div>
 				<div>
 					<Label class="font-medium">Archivo XML</Label>
-					<div
-						class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center mt-1"
-					>
-						<input
-							type="file"
-							id="xml-upload-stepper"
-							accept=".xml,text/xml,application/xml"
-							class="sr-only"
-							@change="handleXMLFileChange"
-						/>
+					<div class="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center mt-1">
+						<input type="file" id="xml-upload-stepper" accept=".xml,text/xml,application/xml"
+							class="sr-only" @change="handleXMLFileChange" />
 						<label for="xml-upload-stepper" class="cursor-pointer">
 							<UploadCloud class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 							<p class="text-xs font-medium">Clic para subir XML</p>
 						</label>
 					</div>
-					<div
-						v-if="props.xmlFile"
-						class="flex items-center justify-between p-2 bg-muted rounded-lg mt-2 text-sm"
-					>
+					<div v-if="props.xmlFile"
+						class="flex items-center justify-between p-2 bg-muted rounded-lg mt-2 text-sm">
 						<span class="truncate">{{ props.xmlFile.name }}</span>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="h-6 w-6"
-							@click="props.onRemoveXML"
-							>✕</Button
-						>
+						<Button variant="ghost" size="icon" class="h-6 w-6" @click="props.onRemoveXML">✕</Button>
 					</div>
 				</div>
 				<div class="flex space-x-2 pt-4">
-					<Button variant="outline" size="sm" class="flex-1" @click="props.onPrevStep"
-						>← Volver</Button
-					>
-					<Button
-						size="sm"
-						class="flex-1"
-						:disabled="!props.pdfFile || !props.xmlFile"
-						@click="props.onNextStep"
-						>Continuar →</Button
-					>
+					<Button variant="outline" size="sm" class="flex-1" @click="props.onPrevStep">← Volver</Button>
+					<Button size="sm" class="flex-1" :disabled="!props.pdfFile || !props.xmlFile"
+						@click="props.onNextStep">Continuar →</Button>
 				</div>
 			</div>
 
@@ -222,26 +168,19 @@ const handleXMLFileChange = (event: Event) => {
 				<div class="space-y-3">
 					<div class="space-y-1">
 						<Label for="folio">Folio</Label>
-						<Input
-							id="folio"
-							:value="props.invoiceData.folio"
-							@input="
-								props.onInvoiceDataChange({
-									...props.invoiceData,
-									folio: ($event.target as HTMLInputElement).value,
-								})
-							"
-						/>
+						<Input id="folio" :value="props.invoiceData.folio" @input="
+							props.onInvoiceDataChange({
+								...props.invoiceData,
+								folio: ($event.target as HTMLInputElement).value,
+							})
+							" />
 					</div>
 					<div class="space-y-1">
 						<Label for="moneda">Moneda</Label>
-						<Select
-							:model-value="props.invoiceData.moneda"
-							@update:modelValue="
-								(val) =>
-									props.onInvoiceDataChange({ ...props.invoiceData, moneda: val })
-							"
-						>
+						<Select :model-value="props.invoiceData.moneda" @update:modelValue="
+							(val) =>
+								props.onInvoiceDataChange({ ...props.invoiceData, moneda: val })
+						">
 							<SelectTrigger id="moneda">
 								<SelectValue />
 							</SelectTrigger>
@@ -254,45 +193,29 @@ const handleXMLFileChange = (event: Event) => {
 					</div>
 					<div class="space-y-1">
 						<Label for="importe">Importe Total</Label>
-						<Input
-							id="importe"
-							type="number"
-							:value="props.invoiceData.importe"
-							@input="
-								props.onInvoiceDataChange({
-									...props.invoiceData,
-									importe:
-										parseFloat(($event.target as HTMLInputElement).value) ||
-										null,
-								})
-							"
-						/>
+						<Input id="importe" type="number" :value="props.invoiceData.importe" @input="
+							props.onInvoiceDataChange({
+								...props.invoiceData,
+								importe:
+									parseFloat(($event.target as HTMLInputElement).value) ||
+									null,
+							})
+							" />
 					</div>
 					<div class="space-y-1">
 						<Label for="sociedad">Sociedad</Label>
-						<Input
-							id="sociedad"
-							:value="props.invoiceData.sociedad"
-							@input="
-								props.onInvoiceDataChange({
-									...props.invoiceData,
-									sociedad: ($event.target as HTMLInputElement).value,
-								})
-							"
-						/>
+						<Input id="sociedad" :value="props.invoiceData.sociedad" @input="
+							props.onInvoiceDataChange({
+								...props.invoiceData,
+								sociedad: ($event.target as HTMLInputElement).value,
+							})
+							" />
 					</div>
 				</div>
 				<div class="flex space-x-2 pt-4">
-					<Button variant="outline" size="sm" class="flex-1" @click="props.onPrevStep"
-						>← Volver</Button
-					>
-					<Button
-						size="sm"
-						class="flex-1"
-						:disabled="!props.invoiceData.folio || !props.invoiceData.importe"
-						@click="props.onNextStep"
-						>Continuar →</Button
-					>
+					<Button variant="outline" size="sm" class="flex-1" @click="props.onPrevStep">← Volver</Button>
+					<Button size="sm" class="flex-1" :disabled="!props.invoiceData.folio || !props.invoiceData.importe"
+						@click="props.onNextStep">Continuar →</Button>
 				</div>
 			</div>
 
@@ -301,40 +224,38 @@ const handleXMLFileChange = (event: Event) => {
 				<h4 class="font-semibold">Confirmación Final</h4>
 				<div class="space-y-3 text-sm">
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Proveedor:</span
-						><span class="font-medium">{{ props.currentSupplierName }}</span>
+						<span class="text-muted-foreground">Proveedor:</span><span class="font-medium">{{
+							props.currentSupplierName }}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Entradas:</span
-						><span class="font-medium">{{ props.selectedGRs.length }}</span>
+						<span class="text-muted-foreground">Entradas:</span><span class="font-medium">{{
+							props.selectedGRs.length }}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Total Seleccionado:</span
-						><span class="font-semibold">{{
+						<span class="text-muted-foreground">Total Seleccionado:</span><span class="font-semibold">{{
 							props.formatCurrency(props.totalSelectedAmount)
 						}}</span>
 					</div>
 					<Separator />
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Archivo PDF:</span
-						><span class="font-medium">{{ props.pdfFile?.name }}</span>
+						<span class="text-muted-foreground">Archivo PDF:</span><span class="font-medium">{{
+							props.pdfFile?.name }}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Archivo XML:</span
-						><span class="font-medium">{{ props.xmlFile?.name }}</span>
+						<span class="text-muted-foreground">Archivo XML:</span><span class="font-medium">{{
+							props.xmlFile?.name }}</span>
 					</div>
 					<Separator />
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Folio:</span
-						><span class="font-medium">{{ props.invoiceData.folio }}</span>
+						<span class="text-muted-foreground">Folio:</span><span class="font-medium">{{
+							props.invoiceData.folio }}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Moneda:</span
-						><span class="font-medium">{{ props.invoiceData.moneda }}</span>
+						<span class="text-muted-foreground">Moneda:</span><span class="font-medium">{{
+							props.invoiceData.moneda }}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Importe:</span
-						><span class="font-semibold">{{
+						<span class="text-muted-foreground">Importe:</span><span class="font-semibold">{{
 							props.formatCurrency(
 								props.invoiceData.importe || 0,
 								props.invoiceData.moneda,
@@ -342,8 +263,8 @@ const handleXMLFileChange = (event: Event) => {
 						}}</span>
 					</div>
 					<div class="flex justify-between">
-						<span class="text-muted-foreground">Sociedad:</span
-						><span class="font-medium">{{ props.invoiceData.sociedad }}</span>
+						<span class="text-muted-foreground">Sociedad:</span><span class="font-medium">{{
+							props.invoiceData.sociedad }}</span>
 					</div>
 
 					<!-- Información de desviación si existe -->
@@ -357,53 +278,31 @@ const handleXMLFileChange = (event: Event) => {
 							<div class="flex justify-between">
 								<span class="text-muted-foreground">Diferencia:</span>
 								<span class="font-medium text-amber-600">
-									{{ props.formatCurrency(props.deviationInfo.difference, props.deviationInfo.currency) }}
+									{{ props.formatCurrency(props.deviationInfo.difference,
+										props.deviationInfo.currency) }}
 								</span>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-muted-foreground">Tolerancia:</span>
 								<span class="font-medium">
-									{{ props.formatCurrency(props.deviationInfo.tolerance, props.deviationInfo.currency) }}
+									{{ props.formatCurrency(props.deviationInfo.tolerance, props.deviationInfo.currency)
+									}}
 								</span>
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="flex space-x-2 pt-4">
-					<Button
-						variant="outline"
-						size="sm"
-						class="flex-1"
-						@click="props.onPrevStep"
-						:disabled="props.isSubmitting"
-						>← Volver</Button
-					>
-					<Button
-						size="sm"
-						class="flex-1"
-						@click="props.onSubmitInvoice"
-						:disabled="props.isSubmitting"
-					>
-						<svg
-							v-if="props.isSubmitting"
-							class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-						>
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-							></path>
+					<Button variant="outline" size="sm" class="flex-1" @click="props.onPrevStep"
+						:disabled="props.isSubmitting">← Volver</Button>
+					<Button size="sm" class="flex-1" @click="props.onSubmitInvoice" :disabled="props.isSubmitting">
+						<svg v-if="props.isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+							xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+							</circle>
+							<path class="opacity-75" fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+							</path>
 						</svg>
 						<span v-if="props.isSubmitting">Procesando...</span>
 						<span v-else>Confirmar Carga</span>
