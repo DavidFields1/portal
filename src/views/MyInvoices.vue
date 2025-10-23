@@ -27,12 +27,12 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import InvoicesMonitorSkeleton from '@/components/skeleton/InvoicesMonitorSkeleton.vue'; // Asumo que tienes un skeleton
 
 // --- 1. Importar el store y el schema ---
 
 import type { InvoiceMonitor } from '@/schemas/invoiceSchemas';
 import { useInvoicesStore } from '@/stores/myInvoicesStore';
+import MyInvoicesSkeleton from '@/components/skeleton/MyInvoicesSkeleton.vue';
 
 // --- 2. Instanciar el Store y extraer el estado de forma reactiva ---
 const invoicesStore = useInvoicesStore();
@@ -50,7 +50,7 @@ const {
 } = storeToRefs(invoicesStore);
 
 // --- Estado local para la UI (no para los datos) ---
-const showFilters = ref(false);
+const showFilters = ref(true);
 const startDate = ref<DateValue>();
 const endDate = ref<DateValue>();
 
@@ -179,10 +179,11 @@ const getFiltersButtonVariant = () => {
 };
 
 const getBadgeVariant = (estatus: string | null) => {
-	if (estatus === 'Cargada') return 'secondary';
-	if (estatus === 'Validada') return 'default';
-	if (estatus === 'Pagada') return 'success';
-	if (estatus === 'Rechazada') return 'destructive';
+	if (estatus === 'PENDIENTE') return 'secondary';
+	if (estatus === 'PROCESADA') return 'default';
+	if (estatus === 'PAGADA TOTALMENTE') return 'success';
+	if (estatus === 'PAGADA PARCIALMENTE') return 'destructive';
+	if (estatus === 'CON COMPLEMENTO') return 'outline';
 	return 'outline';
 };
 </script>
@@ -204,7 +205,7 @@ const getBadgeVariant = (estatus: string | null) => {
 		</div>
 
 		<!-- 5. Manejo de estados de Carga y Error -->
-		<InvoicesMonitorSkeleton v-if="isLoading" />
+		<MyInvoicesSkeleton v-if="isLoading" />
 		<div v-else-if="isError" class="py-10 text-center text-red-500">
 			<p>Error al cargar las facturas: {{ error?.message }}</p>
 			<Button variant="outline" class="mt-4" @click="invoicesStore.refetch()">
