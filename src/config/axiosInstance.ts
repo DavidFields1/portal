@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-	baseURL: 'http://13.216.21.166/reciboo-api',
+	baseURL: 'http://13.216.21.166/api',
 });
 
 axiosInstance.interceptors.request.use(

@@ -16,6 +16,7 @@ export const useInvoicesStore = defineStore('invoicesStore', () => {
 	const fecha_creacion = ref('');
 	const UUId = ref('');
 	const idProveedorSap = ref('');
+	const activeFilterCount = ref(0);
 
 	// 📡 Query
 	const { data, isLoading, isError, error, refetch } = useInvoicesQuery({
@@ -76,6 +77,7 @@ export const useInvoicesStore = defineStore('invoicesStore', () => {
 		tipoFechaBusqueda,
 		fecha_creacion,
 		UUId,
+		activeFilterCount,
 		idProveedorSap,
 
 		// Datos

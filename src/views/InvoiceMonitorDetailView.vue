@@ -30,7 +30,10 @@ const {
 
 watchEffect(() => {
 	const prorateos = prorateosData.value?.object;
+	console.log('prorateos', prorateos);
+	console.log('selectedInvoice.value', selectedInvoice.value);
 	if (prorateos && selectedInvoice.value?.conceptos) {
+		console.log('entro');
 		_mergeProrateosIntoConcepts(prorateos);
 	}
 });

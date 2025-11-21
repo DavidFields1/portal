@@ -130,6 +130,7 @@ export const useInvoiceMonitorStore = defineStore('invoice-monitor', () => {
 	};
 
 	const _mergeProrateosIntoConcepts = (prorrateos: Prorrateo[]) => {
+		
 		if (!conceptsQuery.data.value || !prorrateos) return;
 
 		// Crear un mapa para agrupar prorrateos por id_concepto

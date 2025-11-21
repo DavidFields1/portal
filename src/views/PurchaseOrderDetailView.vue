@@ -161,8 +161,6 @@ const downloadXML = () => {
 	alert(`Iniciando descarga del XML para la OC ${ordenCompra.value.id}`)
 }
 
-import { formatCurrency } from '@/lib/utils'
-
 const formatDate = (dateString: string) => {
 	try {
 		return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(

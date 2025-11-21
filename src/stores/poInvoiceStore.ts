@@ -655,10 +655,6 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 				'entradas_mercancia',
 				new Blob([JSON.stringify(entradas_mercancia)], { type: 'application/json' }),
 			);
-			formData.append(
-				'retenciones',
-				new Blob([JSON.stringify(retenciones)], { type: 'application/json' }),
-			);
 
 			// Adjuntar archivos PDF y XML como blobs
 			if (selectedPdfFile.value) {
@@ -667,6 +663,11 @@ export const usePOInvoiceStore = defineStore('po-invoice', () => {
 			if (selectedXmlFile.value) {
 				formData.append('files', selectedXmlFile.value, selectedXmlFile.value.name);
 			}
+
+			formData.append(
+				'retenciones',
+				new Blob([JSON.stringify(retenciones)], { type: 'application/json' }),
+			);
 
 			// Usar TanStack Query para la petición
 			const createFacturaQueryOptions = {

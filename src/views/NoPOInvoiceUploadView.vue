@@ -27,7 +27,7 @@ import { formatCurrency } from '@/lib/utils';
 // Import child components for the workflow
 import NoPoInvoiceDataForm from '../components/no-po-invoice-upload/NoPoInvoiceDataForm.vue';
 import NoPoSupplierSelector from '@/components/no-po-invoice-upload/NoPoSupplierSelector.vue';
-import NoPoConfirmStep from '@/components/no-po-invoice-upload/NoPOConfirmStep.vue';
+
 
 const invoiceStore = useNoPOInvoiceStore();
 

@@ -24,7 +24,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { type DateValue, getLocalTimeZone } from '@internationalized/date'
-import { formatCurrency } from '@/lib/utils'
 
 // --- Tipos y Datos Simulados ---
 interface Pago {
