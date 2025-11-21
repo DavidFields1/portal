@@ -1,6 +1,7 @@
 // src/composables/useInvoicesQuery.ts
 
 import { useQuery } from '@tanstack/vue-query';
+import { toValue, type MaybeRef, computed } from 'vue';
 // 1. Importa tu instancia de Axios
 
 import {
@@ -23,43 +24,40 @@ interface InvoicesQueryParams {
 	idProveedorSap?: string;
 }
 
-export function useInvoicesQuery(params: InvoicesQueryParams) {
-	// La función de fetch es la que cambia
+export function useInvoicesQuery(params: MaybeRef<InvoicesQueryParams>) {
 	const fetchInvoices = async (): Promise<InvoiceMonitorResponse> => {
 		const authStore = useAuthStore();
-		const isEmployee = authStore.user?.perfiles.filter((perfil) => perfil.codigo === 'EMPL');
+		const isEmployee = authStore.user?.perfiles.some((perfil) => perfil.codigo === 'EMPL');
 
-		// 2. Preparamos los parámetros para Axios
+		// Usamos toValue para obtener el valor actual de los parámetros (reactivos o no)
+		const resolvedParams = toValue(params);
+
 		const queryParams = {
-			tipoFactura: params.tipoFactura ?? '',
-			searchAfter: params.searchAfter ?? '',
-			estatus: params.estatus ?? '',
-			fechaOrigen: params.fechaOrigen ?? '',
-			fechaLimite: params.fechaLimite ?? '',
-			tipoFechaBusqueda: params.tipoFechaBusqueda ?? '',
-			fecha_creacion: params.fecha_creacion ?? '',
-			UUId: params.UUId ?? '',
-			// Lógica de rol para el idProveedorSap
+			tipoFactura: resolvedParams.tipoFactura ?? '',
+			searchAfter: resolvedParams.searchAfter ?? '',
+			estatus: resolvedParams.estatus ?? '',
+			fechaOrigen: resolvedParams.fechaOrigen ?? '',
+			fechaLimite: resolvedParams.fechaLimite ?? '',
+			tipoFechaBusqueda: resolvedParams.tipoFechaBusqueda ?? '',
+			fecha_creacion: resolvedParams.fecha_creacion ?? '',
+			UUId: resolvedParams.UUId ?? '',
 			idProveedorSap: isEmployee
-				? (params.idProveedorSap ?? '')
+				? (resolvedParams.idProveedorSap ?? '')
 				: (authStore.user?.proveedor?.id_proveedor_sap ?? ''),
 		};
 
-		// 3. Hacemos la llamada con axiosInstance.get
-		//    - La URL base y el token de autorización se añaden automáticamente.
-		//    - Axios se encarga de construir la query string desde el objeto `params`.
 		const response = await axiosInstance.get('/factura', {
 			params: queryParams,
 		});
 
-		// 4. Con Axios, los datos vienen en `response.data`.
-		//    Validamos la respuesta con Zod como antes.
 		return InvoiceMonitorResponseSchema.parse(response.data);
 	};
 
-	// La configuración de useQuery no cambia
+	// Creamos un `computed` para la queryKey para que sea reactiva
+	const queryKey = computed(() => ['invoices', toValue(params)]);
+
 	return useQuery({
-		queryKey: ['invoices', params],
+		queryKey: queryKey, // La clave de la consulta ahora es un computed
 		queryFn: fetchInvoices,
 	});
 }

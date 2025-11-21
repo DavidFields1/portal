@@ -1,0 +1,112 @@
+{
+  
+  "IdProveedor": "string", // factura
+  "Uuid": "string", // factura
+  
+  "UsuarioCarga": "string", // usuario en sesion
+  "FISCAL_DATA": { // factura
+    "RfcEmisor": "string",
+    "RegimenFiscal": "string",
+    "FormaPago": "string",
+    "MetodoPago": "string",
+    "Subtotal": "string",
+    "Total": "string",
+    "Moneda": "string",
+    "TotalImpTrasladados": "string",
+    "TotalImpRetenidos": "string",
+    "FechaTimbrado": "string"
+  },
+  "DOCUMENTO_CABECERA": {
+    "Sociedad": "string", // factura
+    "FechaDocumento": "string", // factura fecha exp
+    "FechaContabilizacion": "string", // hora seleccionada
+    "AnioFiscal": "string", // año actual const year = this.date.getFullYear();
+    "PeriodoFiscal": "string", // mes const month = (this.date.getMonth() + 1).toString().padStart(2, '0');
+    "Referencia": "string",  // serie factura - folio factura si vienen maximo 16 caracteres, si no vienen uuid - 4 caracteres del final
+    "HeaderTxt": "string" // descripcion
+  },
+  "POSICIONES_PROVEEDORSet": [ // solo posicion 0
+    {
+      "Item": "string", // "0000000001"
+      "IdProveedor": "string", // factura
+      "Sociedad": "string", // factura
+      "CondPago": "string", // vacia
+      "IndImpuesto": "string", // SI TODOS LOS PRORRATEOS DE ESE CONCEPTO SON IGUALES LE PONEMOS ESE INDICADOR DE IMPUESTO SINO (SE QUEDA VACIO: POR DEFINIR)
+      "TextoPos": "string" // descripcion 
+    }
+  ],
+  "CUENTAS_CONTABLESSet": [ // recorrer prorrateos 
+    {
+      "Item": "string", // "0000000002" - 10 caracteres se agrega uno por cada prorrateo  "0000000003", "0000000004"
+      "CuentaContable": "string", // prorrateo
+      "TextoPos": "string", // descripcion
+      "Sociedad": "string", // factura
+      "AnioFiscal": "string", // año actual const year = this.date.getFullYear();
+      "PeriodoFiscal": "string", // mes const month = (this.date.getMonth() + 1).toString().padStart(2, '0');
+      "FechaContabilizacion": "string", // fecha seleccionada
+      "IndImpuesto": "string", // prorrateo
+      "CentroCosto": "string", // prorrateo
+      "OrdenInterna": "string" // vacia
+    }
+  ],
+  "POSICIONES_IMPUESTOSSet": [ // solo se llena si moneda = 'MXN'
+    {
+      "Item": "string", // siguiente en el contador "000000000X"
+      "IndImpuestos": "string" // si todos los prorrateos son iguales (mismo indicador de imp) poner ese, si no poner cada uno de los indicadores si son diferentes
+    }
+  ],
+  "POSICIONES_RETENCIONSet": [ // "POSICIONES_RETENCIONSet": [],}
+    {}
+  ],
+  "POSICIONES_MONTOSSet": [ 
+    // acumulador de impuestos de todos los prorrateos, primero multiplicar buscar en ind iva el factor de mult del indice de impuesto de cada importe y sumar
+    // despues de recorrer los prorrateos, verificar si todos los prorrateos tienen el mismo indicador de impuesto
+    // si es asi, crear otro objeto
+    {
+      "Item": "0000000001",
+      "Currency": "string", // factura
+      "Importe": "string", // total factura * (-1)
+      "BaseImp": "string" // 0.0000
+    },
+    { // recorrer prorrateos, sumar importe del prorrateo 
+      "Item": "string", // incrementar contador montos 0000000002
+      "Currency": "string", // factura
+      "Importe": "string", // importe prorrateo valor importe
+      "BaseImp": "string" // 0.0000
+    },
+    { // solo si todos los prorrateos tienen el mismo indicador de impuestos
+      "Item": "000000000X", // incrementar contador
+      "Currency": "string", // factura
+      "Importe": "string", // variable acumuladora de impuestos
+      "BaseImp": "string" // subtotal de la factura
+    },
+    { // si no son iguales, recorrer prorrateos otra vez 
+      "Item": "000000000X", // incrementar contador
+      "Currency": "string", // factura
+      "Importe": "string", // valor importe del prorrateo * buscar en ind iva el factor de mult del indice de impuesto que tiene el prorrateo
+      "BaseImp": "string" // valor importe del prorrate
+    },
+
+    // ejemplo
+    // tengo 2 prorrateos, los dos con el mismo indice de impuesto (iva), en la primera recorrida de prorrateos: variable que acumula los impuestos
+    // por cada prorrateo, en la variable acumulador de impuestos va a ser += importe del prorrateo * (cada prorrateo tiene un indice de impuesto, con ese indice buscar en el arrglo de los indicadores de iva el factor de multiplicacion de ese indice)
+  ],
+  "MESSAGESSet": [ // mandar estructura vacia
+    {
+      "Type": "string",
+      "Id": "string",
+      "Number": "string",
+      "Message": "string",
+      "LogNo": "string",
+      "LogMsgNo": "string",
+      "MessageV1": "string",
+      "MessageV2": "string",
+      "MessageV3": "string",
+      "MessageV4": "string",
+      "Parameter": "string",
+      "Row": "string",
+      "Field": "string",
+      "System": "string"
+    }
+  ]
+}
